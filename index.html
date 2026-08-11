@@ -176,33 +176,53 @@ main{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
 .mijoz-bar .m-alm{margin-left:auto;border:none;background:#fef3c7;color:#92400e;
   border-radius:8px;padding:6px 14px;font-weight:700;font-size:13px}
 
-/* mijoz oynasi */
-.sheet.mijoz{max-width:520px;width:100%}
-.m-search{position:relative;margin:16px 20px 8px}
+/* mijoz oynasi (CRM) */
+.sheet.mijoz{max-width:600px;width:100%}
+.m-top{display:flex;gap:10px;padding:16px 20px 10px}
+.m-search{position:relative;flex:1}
 .m-search .ic{position:absolute;left:12px;top:12px;opacity:.45;font-size:18px}
 .m-search input{width:100%;height:48px;border:1px solid var(--line);border-radius:12px;
   padding:0 14px 0 42px;font-size:16px;background:#f8fafc;color:var(--ink)}
 .m-search input:focus{outline:none;border-color:var(--gold);background:#fff}
-.m-nat{max-height:46vh;overflow-y:auto;padding:0 20px}
-.m-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
-  border:none;background:none;padding:12px 8px;border-bottom:1px solid var(--line)}
-.m-row:hover{background:#f8fafc}
-.m-row .m-ic{font-size:22px}
-.m-row .m-t{display:flex;flex-direction:column}
-.m-row .m-t b{font-size:15px}
+.m-yangi-tugma{flex:none;border:none;background:var(--accent);color:#fff;
+  border-radius:12px;padding:0 20px;font-weight:700;font-size:15px}
+.m-list{max-height:52vh;overflow-y:auto;padding:0 12px}
+.m-row{display:flex;align-items:center;gap:10px;padding:10px 8px;
+  border-bottom:1px solid var(--line)}
+.m-row .m-t{flex:1;min-width:0;cursor:pointer}
+.m-row .m-t b{font-size:15px;display:block}
 .m-row .m-t span{font-size:13px;color:var(--ink2)}
-.m-yuk{padding:20px 8px;color:var(--ink2);text-align:center}
-.m-yangi-tugma{margin:12px 20px 20px;width:calc(100% - 40px);border:2px dashed var(--line);
-  background:none;color:var(--ink);border-radius:12px;padding:13px;font-weight:700}
-#mYangi{padding:20px}
-#mYangi label{display:block;font-size:13px;color:var(--ink2);margin:12px 0 5px;font-weight:600}
-#mYangi input{width:100%;height:48px;border:1px solid var(--line);border-radius:12px;
+.m-qarz{color:var(--bad);font-weight:700;margin-left:6px}
+.m-oldin{color:var(--ok);font-weight:700;margin-left:6px}
+.m-akt{display:flex;gap:2px;flex:none}
+.m-akt button{border:none;background:none;font-size:19px;width:40px;height:40px;
+  border-radius:9px;cursor:pointer}
+.m-akt button:hover{background:#f1f5f9}
+.m-akt .m-buy{background:var(--gold)}
+.m-yuk{padding:26px 8px;color:var(--ink2);text-align:center}
+.m-sahifa{display:flex;align-items:center;justify-content:center;gap:14px;
+  padding:12px;font-size:14px;color:var(--ink2)}
+.m-sahifa button{border:1px solid var(--line);background:#fff;border-radius:8px;
+  width:38px;height:38px;font-size:18px;cursor:pointer}
+.m-sahifa button:disabled{opacity:.35}
+#mForma,#mKor{padding:20px}
+#mForma label{display:block;font-size:13px;color:var(--ink2);margin:12px 0 5px;font-weight:600}
+#mForma input{width:100%;height:48px;border:1px solid var(--line);border-radius:12px;
   padding:0 14px;font-size:16px;background:#f8fafc;color:var(--ink)}
-#mYangi input:focus{outline:none;border-color:var(--gold);background:#fff}
-#mYangi .btn{width:100%;justify-content:center;margin-top:20px;height:50px}
+#mForma input:focus{outline:none;border-color:var(--gold);background:#fff}
+#mForma .btn{width:100%;justify-content:center;margin-top:20px;height:50px}
 .m-orqaga{width:100%;border:none;background:none;color:var(--ink2);margin-top:12px;
-  font-weight:600;padding:8px}
+  font-weight:600;padding:8px;cursor:pointer}
 .m-hint{color:var(--ink2);font-size:12px;text-align:center;margin-top:10px}
+.kor-bosh{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.kor-bosh .m-ic{font-size:40px}
+.kor-bosh h4{margin:0;font-size:20px}
+.kor-bosh span{color:var(--ink2)}
+.kor-bal{padding:14px;border-radius:12px;background:#f8fafc;text-align:center;
+  font-size:18px;font-weight:700;margin-bottom:14px}
+.bal-qarz{color:var(--bad)} .bal-old{color:var(--ok)} .bal-nol{color:var(--ink2)}
+.kor-akt{display:flex;flex-direction:column;gap:10px;margin:18px 0}
+.kor-akt .btn{width:100%;justify-content:center;height:48px}
 .ord-mijoz{padding:10px 0;font-size:15px;border-bottom:1px solid var(--line);margin-bottom:6px}
 .ord-mijoz.ogoh{color:#92400e}
 .ord-mijoz.ogoh button{border:none;background:#fef3c7;color:#92400e;border-radius:8px;
@@ -267,24 +287,34 @@ main{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
 </div></div>
 
 <div class="ov" id="ovMijoz"><div class="sheet mijoz">
-  <div class="sh-h"><h3>Mijozni tanlang</h3><button class="x" data-close>✕</button></div>
-  <div id="mQidiruv">
-    <div class="m-search">
-      <span class="ic">🔍</span>
-      <input id="mQ" type="search" placeholder="Telefon yoki ism bo'yicha qidiring..." autocomplete="off">
+  <div class="sh-h"><h3 id="mSarlavha">Mijozlar</h3><button class="x" data-close>✕</button></div>
+
+  <!-- ro'yxat ko'rinishi -->
+  <div id="mRoyxat">
+    <div class="m-top">
+      <div class="m-search">
+        <span class="ic">🔍</span>
+        <input id="mQ" type="search" placeholder="Telefon yoki ism..." autocomplete="off">
+      </div>
+      <button class="m-yangi-tugma" onclick="mijozYangiKor('')">+ Yangi</button>
     </div>
-    <div class="m-nat" id="mNat"></div>
-    <button class="m-yangi-tugma" onclick="mijozYangiKor('')">+ Yangi mijoz qo'shish</button>
+    <div class="m-list" id="mList"></div>
+    <div class="m-sahifa" id="mSahifa"></div>
   </div>
-  <div id="mYangi" style="display:none">
+
+  <!-- yangi/tahrir forma -->
+  <div id="mForma" style="display:none">
     <label>Ism-familiya</label>
     <input id="mIsm" type="text" placeholder="Masalan: Alisher Karimov" autocomplete="off">
     <label>Telefon</label>
     <input id="mTel" type="tel" inputmode="tel" placeholder="90 123 45 67" autocomplete="off">
-    <button class="btn" id="mYaratBtn" onclick="mijozYarat()">Qo'shish va boshlash</button>
-    <button class="m-orqaga" onclick="mijozSora()">← Qidiruvga qaytish</button>
-    <div class="m-hint">Yangi mijoz Billz bazasiga qo'shiladi.</div>
+    <button class="btn" id="mYaratBtn" onclick="mijozSaqla()">Saqlash</button>
+    <button class="m-orqaga" onclick="mijozRoyxatKor()">← Ro'yxatga qaytish</button>
+    <div class="m-hint" id="mFormaHint">Yangi mijoz Billz bazasiga qo'shiladi.</div>
   </div>
+
+  <!-- batafsil ko'rish -->
+  <div id="mKor" style="display:none"></div>
 </div></div>
 
 <div class="ov" id="ovPin"><div class="sheet pin">
@@ -434,9 +464,10 @@ async function pinTekshir(){
   }
 }
 
-/* ---------- mijoz tanlash ---------- */
+/* ---------- mijozlar boshqaruvi (CRM) ---------- */
 let MIJOZ = null;        // {id, ism, tel} — kim uchun buyurtma
-let mQidirT;
+let mQidirT, mSahifa = 1, mSoralgan = '', mTahrirId = null;
+const fmtBal = n => new Intl.NumberFormat('uz-UZ').format(Math.abs(Math.round(n)));
 
 function mijozHeader(){
   const el = $('mijozBar');
@@ -450,89 +481,190 @@ function mijozHeader(){
   }
 }
 
+// oynani ochish + ro'yxatni ko'rsatish
 function mijozSora(){
   $('ovMijoz').classList.add('on');
-  $('mQ').value = ''; $('mNat').innerHTML = '';
-  $('mYangi').style.display = 'none';
-  $('mQidiruv').style.display = 'block';
+  mijozRoyxatKor();
+}
+function _mKorinish(qaysi){
+  $('mRoyxat').style.display = qaysi === 'royxat' ? 'block' : 'none';
+  $('mForma').style.display = qaysi === 'forma' ? 'block' : 'none';
+  $('mKor').style.display = qaysi === 'kor' ? 'block' : 'none';
+  $('mSarlavha').textContent = {royxat:'Mijozlar', forma:'Mijoz ma\'lumoti',
+                                kor:'Mijoz'}[qaysi];
+}
+function mijozRoyxatKor(){
+  _mKorinish('royxat');
+  mSahifa = 1;
+  mijozlarYukla();
   setTimeout(() => $('mQ').focus(), 100);
 }
 
 $('mQ') && ($('mQ').oninput = e => {
-  const q = e.target.value.trim();
+  mSoralgan = e.target.value.trim();
   clearTimeout(mQidirT);
-  if(q.length < 3){ $('mNat').innerHTML = ''; return; }
-  mQidirT = setTimeout(() => mijozQidir(q), 350);
+  mQidirT = setTimeout(() => { mSahifa = 1; mijozlarYukla(); }, 350);
 });
 
-async function mijozQidir(q){
-  $('mNat').innerHTML = '<div class="m-yuk">Qidirilmoqda...</div>';
+async function mijozlarYukla(){
+  $('mList').innerHTML = '<div class="m-yuk">Yuklanmoqda...</div>';
+  $('mSahifa').innerHTML = '';
   if(!API_URL || !API_KALIT){
-    $('mNat').innerHTML = '<div class="m-yuk">Ulanish yo‘q — PIN qayta kiriting</div>';
+    $('mList').innerHTML = '<div class="m-yuk">Ulanish yo‘q — PIN qayta kiriting</div>';
     return;
   }
   try{
-    const r = await fetch(API_URL + '/mijoz/qidir', {
-      method:'POST', headers:{'Content-Type':'application/json','X-Api-Kalit':API_KALIT},
-      body: JSON.stringify({q})
-    });
+    const url = new URL(API_URL + '/mijozlar');
+    url.searchParams.set('sahifa', mSahifa);
+    if(mSoralgan) url.searchParams.set('q', mSoralgan);
+    const r = await fetch(url, {headers:{'X-Api-Kalit':API_KALIT}});
     const d = await r.json();
     const list = d.mijozlar || [];
     if(!list.length){
-      $('mNat').innerHTML = '<div class="m-yuk">Topilmadi. Pastdan yangi mijoz qo‘shing.</div>';
-      mijozYangiKor(q);
+      $('mList').innerHTML = '<div class="m-yuk">Mijoz topilmadi. «+ Yangi» bilan qo‘shing.</div>';
       return;
     }
-    $('mNat').innerHTML = list.map(m =>
-      `<button class="m-row" data-id="${esc(m.id)}" data-ism="${esc(m.ism)}" data-tel="${esc(m.tel||'')}">`+
-      `<span class="m-ic">👤</span><span class="m-t"><b>${esc(m.ism)}</b>`+
-      `<span>${esc(m.tel||'—')}</span></span></button>`).join('');
-    $('mNat').querySelectorAll('.m-row').forEach(b => b.onclick = () =>
-      mijozTanla({id:b.dataset.id, ism:b.dataset.ism, tel:b.dataset.tel}));
+    $('mList').innerHTML = list.map(mijozQator).join('');
+    _mBogla();
+    // sahifalash
+    const jami = d.jami || 0, sahifalar = Math.ceil(jami / 30);
+    if(sahifalar > 1){
+      $('mSahifa').innerHTML =
+        `<button ${mSahifa<=1?'disabled':''} onclick="mSahifaOt(-1)">‹</button>`+
+        `<span>${mSahifa} / ${sahifalar}  ·  ${jami} ta</span>`+
+        `<button ${mSahifa>=sahifalar?'disabled':''} onclick="mSahifaOt(1)">›</button>`;
+    }
   }catch(e){
-    $('mNat').innerHTML = '<div class="m-yuk">Internet yo‘q. Ofisda ulaning.</div>';
+    $('mList').innerHTML = '<div class="m-yuk">Internet yo‘q. Ofisda ulaning.</div>';
+  }
+}
+function mSahifaOt(d){ mSahifa = Math.max(1, mSahifa + d); mijozlarYukla();
+  $('mList').scrollTop = 0; }
+
+function mijozQator(m){
+  const bal = m.balans || 0;
+  const qarz = bal < 0
+    ? `<span class="m-qarz">qarz ${fmtBal(bal)}</span>`
+    : (bal > 0 ? `<span class="m-oldin">oldindan ${fmtBal(bal)}</span>` : '');
+  const j = JSON.stringify(m).replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+  return `<div class="m-row">
+    <div class="m-t" onclick='mijozKor(${j})'>
+      <b>${esc(m.ism)}</b>
+      <span>${esc(m.tel||'—')} ${qarz}</span>
+    </div>
+    <div class="m-akt">
+      <button title="Ko'rish" onclick='mijozKor(${j})'>👁</button>
+      <button title="Qarz/balans" onclick='qarzKor(${j})'>💰</button>
+      <button title="Tahrirlash" onclick='mijozTahrirKor(${j})'>✏️</button>
+      <button class="m-buy" title="Buyurtma" onclick='mijozTanla(${j})'>🛒</button>
+    </div></div>`;
+}
+function _mBogla(){}  // onclick inline — qo'shimcha bog'lash shart emas
+
+// BUYURTMA uchun tanlash — katalogga o'tadi
+function mijozTanla(m){
+  MIJOZ = {id:m.id, ism:m.ism, tel:m.tel};
+  localStorage.setItem('noyob_mijoz', JSON.stringify(MIJOZ));
+  mijozHeader();
+  $('ovMijoz').classList.remove('on');
+  cat = null; qStr = ''; $('q').value=''; limit = 60; side(); draw();
+  $('main').scrollTop = 0;
+  toast(`${m.ism} — katalog ochildi, mijozga bering`);
+}
+
+// KO'RISH — batafsil
+async function mijozKor(m){
+  _mKorinish('kor');
+  $('mKor').innerHTML = '<div class="m-yuk">Yuklanmoqda...</div>';
+  // eng yangi balansni API'dan olamiz
+  let t = m;
+  try{
+    const r = await fetch(API_URL + '/mijoz/' + m.id, {headers:{'X-Api-Kalit':API_KALIT}});
+    if(r.ok) t = await r.json();
+  }catch(e){}
+  const bal = t.balans || 0;
+  const balMatn = bal < 0 ? `<span class="bal-qarz">Qarz: ${fmtBal(bal)} so'm</span>`
+    : bal > 0 ? `<span class="bal-old">Oldindan: ${fmtBal(bal)} so'm</span>`
+    : `<span class="bal-nol">Qarz yo'q</span>`;
+  $('mKor').innerHTML = `
+    <div class="kor-bosh"><span class="m-ic">👤</span>
+      <div><h4>${esc(t.ism)}</h4><span>${esc(t.tel||'—')}</span></div></div>
+    <div class="kor-bal">${balMatn}</div>
+    <div class="kv"><b>Oxirgi xarid</b><span>${(t.oxirgi_xarid||'—').slice(0,10)}</span></div>
+    <div class="kv"><b>Birinchi xarid</b><span>${(t.birinchi_xarid||'—').slice(0,10)}</span></div>
+    <div class="kor-akt">
+      <button class="btn" onclick='mijozTanla(${JSON.stringify(t).replace(/'/g,"&#39;")})'>🛒 Buyurtma berish</button>
+      <button class="btn ghost" onclick='qarzKor(${JSON.stringify(t).replace(/'/g,"&#39;")})'>💰 Qarz</button>
+      <button class="btn ghost" onclick='mijozTahrirKor(${JSON.stringify(t).replace(/'/g,"&#39;")})'>✏️ Tahrir</button>
+    </div>
+    <button class="m-orqaga" onclick="mijozRoyxatKor()">← Ro'yxat</button>`;
+}
+
+// QARZ/BALANS
+function qarzKor(m){
+  const bal = m.balans || 0;
+  if(bal < 0){
+    alert(`💰 ${m.ism}\n\nQarz: ${fmtBal(bal)} so'm\n\n`+
+          `To'lovni qabul qilish uchun kassaga murojaat qiling.\n`+
+          `(Naqd to'lov Склад NOYOB kassasida rasmiylashtiriladi.)`);
+  }else if(bal > 0){
+    alert(`💰 ${m.ism}\n\nOldindan to'langan: ${fmtBal(bal)} so'm`);
+  }else{
+    alert(`💰 ${m.ism}\n\nQarz yo'q. Balans toza.`);
   }
 }
 
-function mijozTanla(m){
-  MIJOZ = m;
-  localStorage.setItem('noyob_mijoz', JSON.stringify(m));
-  mijozHeader();
-  $('ovMijoz').classList.remove('on');
-  toast(`Mijoz: ${m.ism}`);
+// TAHRIR
+function mijozTahrirKor(m){
+  _mKorinish('forma');
+  mTahrirId = m.id;
+  $('mIsm').value = m.ism === '—' ? '' : (m.ism || '');
+  $('mTel').value = (m.tel || '').replace(/[^\d+]/g,'');
+  $('mFormaHint').textContent = 'O\'zgarishlar Billz bazasida saqlanadi.';
+  $('mYaratBtn').textContent = 'Saqlash';
+  setTimeout(() => $('mIsm').focus(), 100);
 }
 
-function mijozYangiKor(boshISM){
-  $('mQidiruv').style.display = 'none';
-  $('mYangi').style.display = 'block';
-  // qidiruv raqamli bo'lsa telefon maydoniga, aks holda ismga
-  const raqamli = /^[\d+ ]+$/.test(boshISM || '');
-  $('mIsm').value = raqamli ? '' : (boshISM || '');
-  $('mTel').value = raqamli ? boshISM : '';
+// YANGI
+function mijozYangiKor(bosh){
+  _mKorinish('forma');
+  mTahrirId = null;
+  const raqamli = /^[\d+ ]+$/.test(bosh || '');
+  $('mIsm').value = raqamli ? '' : (bosh || '');
+  $('mTel').value = raqamli ? bosh : '';
+  $('mFormaHint').textContent = 'Yangi mijoz Billz bazasiga qo\'shiladi.';
+  $('mYaratBtn').textContent = 'Qo\'shish';
   setTimeout(() => $(raqamli ? 'mIsm' : 'mTel').focus(), 100);
 }
 
-async function mijozYarat(){
+// SAQLASH (yangi yoki tahrir)
+async function mijozSaqla(){
   const ism = $('mIsm').value.trim();
   const tel = $('mTel').value.trim();
   if(ism.length < 2){ toast('Ism kiriting'); return; }
-  $('mYaratBtn').textContent = '⏳'; $('mYaratBtn').disabled = true;
+  if(!navigator.onLine){ toast('Internet yo‘q'); return; }
+  $('mYaratBtn').disabled = true; const asl = $('mYaratBtn').textContent;
+  $('mYaratBtn').textContent = '⏳';
   try{
-    const r = await fetch(API_URL + '/mijoz/qosh', {
-      method:'POST', headers:{'Content-Type':'application/json','X-Api-Kalit':API_KALIT},
-      body: JSON.stringify({ism, tel})
-    });
-    const d = await r.json();
-    if(d.id){
-      mijozTanla({id:d.id, ism:d.ism||ism, tel:d.tel||tel});
-      toast(d.yangi === false ? 'Mijoz allaqachon bor edi' : 'Yangi mijoz Billz‘ga qo‘shildi');
+    if(mTahrirId){
+      const r = await fetch(API_URL + '/mijoz/' + mTahrirId, {
+        method:'PUT', headers:{'Content-Type':'application/json','X-Api-Kalit':API_KALIT},
+        body: JSON.stringify({ism, tel})});
+      const d = await r.json();
+      if(d.ok){ toast('Saqlandi'); mijozRoyxatKor(); }
+      else toast(d.error ? 'Xato: '+d.error : 'Saqlanmadi');
     }else{
-      toast(d.error ? 'Xato: '+d.error : 'Qo‘shilmadi');
+      const r = await fetch(API_URL + '/mijoz/qosh', {
+        method:'POST', headers:{'Content-Type':'application/json','X-Api-Kalit':API_KALIT},
+        body: JSON.stringify({ism, tel})});
+      const d = await r.json();
+      if(d.id){
+        toast(d.yangi === false ? 'Mijoz allaqachon bor edi' : 'Billz‘ga qo‘shildi');
+        mijozTanla({id:d.id, ism:d.ism||ism, tel:d.tel||tel});   // darrov buyurtmaga
+      }else toast(d.error ? 'Xato: '+d.error : 'Qo‘shilmadi');
     }
-  }catch(e){
-    toast('Internet yo‘q — mijoz qo‘shib bo‘lmadi');
-  }
-  $('mYaratBtn').textContent = 'Qo‘shish va boshlash'; $('mYaratBtn').disabled = false;
+  }catch(e){ toast('Internet uzildi'); }
+  $('mYaratBtn').disabled = false; $('mYaratBtn').textContent = asl;
 }
 
 /* ---------- yon menyu ---------- */
