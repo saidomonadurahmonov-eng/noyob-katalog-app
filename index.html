@@ -228,7 +228,9 @@ main{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
 .ord-mijoz.ogoh button{border:none;background:#fef3c7;color:#92400e;border-radius:8px;
   padding:5px 12px;font-weight:700;margin-left:4px}
 
-.sheet.pin{max-width:380px;width:100%;padding:34px 32px;text-align:center}
+.sheet.pin{max-width:380px;width:100%;padding:34px 32px;text-align:center;position:relative}
+.pin-yop{position:absolute;top:14px;right:14px;border:none;background:#f1f5f9;
+  border-radius:10px;width:38px;height:38px;font-size:18px;cursor:pointer;color:var(--ink)}
 .pin-ic{font-size:44px;margin-bottom:8px}
 .sheet.pin h3{margin:0 0 6px;font-size:22px}
 .sheet.pin p{margin:0 0 20px;color:var(--ink2);font-size:15px}
@@ -259,6 +261,7 @@ main{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
   </div>
   <div class="spacer"></div>
   <span class="off" id="off">OFFLINE</span>
+  <button class="btn ghost" id="pinBtnHdr" title="Narx / ulanishni yangilash (PIN)" onclick="pinSora()">🔒</button>
   <button class="btn ghost" id="qoldiqBtn" title="Qoldiqni mijozga ko'rsatish/yashirish">📦 Qoldiq: ON</button>
   <div class="meta"><b id="cnt">—</b><span id="upd">—</span></div>
   <button class="btn ghost" id="dlBtn" title="Ofisda bosing — rasmlar planshetga saqlanadi">⬇ Offline</button>
@@ -318,6 +321,7 @@ main{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
 </div></div>
 
 <div class="ov" id="ovPin"><div class="sheet pin">
+  <button class="pin-yop" id="pinYop" onclick="pinYopish()" style="display:none">✕</button>
   <div class="pin-ic">🔒</div>
   <h3>Narxlarni ochish</h3>
   <p>Optom narxlarni ko'rish uchun PIN kodni kiriting</p>
@@ -427,8 +431,21 @@ async function boot(){
   if(narxOqi()){
     // narx keshda — darrov ko'rsatamiz, fonda jimgina yangilaymiz
     draw();
-    if(navigator.onLine) narxYangila(true).then(ok => { if(ok) draw(); });
-    if(!MIJOZ) mijozSora();      // narx bor, lekin mijoz tanlanmagan
+    // Eski kesh: narx bor lekin API ma'lumoti yo'q. Internet bo'lsa jimgina
+    // yangi narx_enc.json ni tortib API'ni to'ldiramiz; bo'lmasa PIN so'raymiz.
+    if(!API_URL || !API_KALIT){
+      if(navigator.onLine){
+        narxYangila(true).then(ok => {
+          if(ok && API_URL){ draw(); if(!MIJOZ) mijozSora(); }
+          else pinSora();       // yangilanmadi — PIN qayta kiriting
+        });
+      }else{
+        pinSora();              // offline + API yo'q — PIN kerak
+      }
+    }else{
+      if(navigator.onLine) narxYangila(true).then(ok => { if(ok) draw(); });
+      if(!MIJOZ) mijozSora();
+    }
   }else{
     // birinchi kirish — PIN so'raymiz
     draw();
@@ -442,8 +459,11 @@ function pinSora(xatoMi){
   ov.classList.add('on');
   $('pinInput').value = '';
   $('pinXato').style.display = xatoMi ? 'block' : 'none';
+  // narx allaqachon ochilgan bo'lsa — yopish tugmasi ko'rinadi (majburiy emas)
+  $('pinYop').style.display = narxBor() ? 'block' : 'none';
   setTimeout(() => $('pinInput').focus(), 100);
 }
+function pinYopish(){ $('ovPin').classList.remove('on'); }
 async function pinTekshir(){
   const pin = $('pinInput').value.trim();
   if(pin.length < 3){ return; }
@@ -510,7 +530,7 @@ async function mijozlarYukla(){
   $('mList').innerHTML = '<div class="m-yuk">Yuklanmoqda...</div>';
   $('mSahifa').innerHTML = '';
   if(!API_URL || !API_KALIT){
-    $('mList').innerHTML = '<div class="m-yuk">Ulanish yo‘q — PIN qayta kiriting</div>';
+    $('mList').innerHTML = '<div class="m-yuk">Ulanish yo‘q.<br><button class="btn" style="margin-top:12px" onclick="pinSora()">🔒 PIN qayta kiriting</button></div>';
     return;
   }
   try{
@@ -900,7 +920,7 @@ async function buyurtmaYubor(){
   const ids = Object.keys(ORD).filter(i => ORD[i] > 0);
   if(!ids.length){ toast('Buyurtma bo‘sh'); return; }
   if(!MIJOZ){ toast('Avval mijozni tanlang'); mijozSora(); return; }
-  if(!API_URL || !API_KALIT){ toast('Ulanish yo‘q — PIN qayta kiriting'); return; }
+  if(!API_URL || !API_KALIT){ toast('Ulanish yo‘q — PIN qayta kiriting'); pinSora(); return; }
   if(!navigator.onLine){ toast('Internet yo‘q — buyurtma yuborish uchun ulaning'); return; }
 
   const btn = $('yuborBtn');
@@ -991,9 +1011,11 @@ $('dlBtn').onclick = async () => {
    chiqmaydi — eng ustki ochiq narsa yopiladi, keyin qo'riqchi qayta
    qo'yiladi. Shunday qilib ilovadan/saytdan hech qachon chiqib ketmaydi. */
 function orqagaBir(){
-  // 1) mahsulot oynasi
+  // 1) PIN — eng ustda ochiladi; narx bor bo'lsa yopiladi, bo'lmasa majburiy
+  if($('ovPin').classList.contains('on')){ if(narxBor()) pinYopish(); return; }
+  // 2) mahsulot oynasi
   if($('ovP').classList.contains('on')){ $('ovP').classList.remove('on'); return; }
-  // 2) mijoz oynasi — ichki ko'rinishlar avval
+  // 3) mijoz oynasi — ichki ko'rinishlar avval
   if($('ovMijoz').classList.contains('on')){
     if($('mForma').style.display !== 'none' || $('mKor').style.display !== 'none'){
       mijozRoyxatKor(); return;                 // batafsil/forma -> ro'yxat
@@ -1001,10 +1023,8 @@ function orqagaBir(){
     if(MIJOZ){ $('ovMijoz').classList.remove('on'); return; }  // mijoz bor — yopiladi
     return;                                       // mijoz majburiy — ochiq qoladi
   }
-  // 3) buyurtma oynasi
+  // 4) buyurtma oynasi
   if($('ovO').classList.contains('on')){ $('ovO').classList.remove('on'); return; }
-  // 4) PIN — majburiy, ochiq qoladi
-  if($('ovPin').classList.contains('on')) return;
   // 5) qidiruv yoki kategoriya faol — bosh holatga
   if(qStr){ $('q').value=''; qStr=''; $('clr').style.display='none'; limit=60; side(); draw(); return; }
   if(cat){ cat=null; limit=60; side(); draw(); $('main').scrollTop=0; return; }
