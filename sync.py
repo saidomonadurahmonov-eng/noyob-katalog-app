@@ -47,6 +47,30 @@ if not PIN:
 if not PIN:
     PIN = "2604"           # standart — .env da o'zgartiring
 
+
+def _env(nom, standart=""):
+    v = os.getenv(nom)
+    if v:
+        return v.strip()
+    f = PAPKA / ".env"
+    if f.exists():
+        for q in f.read_text(encoding="utf-8").splitlines():
+            if q.strip().startswith(nom + "="):
+                return q.split("=", 1)[1].strip()
+    return standart
+
+
+# Savdo API (mijoz + buyurtma). Kalit noyob-savdo-api/.env dan olinadi.
+SAVDO_API_URL = _env("SAVDO_API_URL",
+                     "https://noyob-savdo-api-production.up.railway.app")
+SAVDO_API_KALIT = _env("SAVDO_API_KALIT", "")
+if not SAVDO_API_KALIT:
+    _apienv = pathlib.Path(r"C:\Users\user\noyob-savdo-api\.env")
+    if _apienv.exists():
+        for _q in _apienv.read_text(encoding="utf-8").splitlines():
+            if _q.strip().startswith("API_KALIT="):
+                SAVDO_API_KALIT = _q.split("=", 1)[1].strip()
+
 _qulf = threading.Lock()
 
 
@@ -228,8 +252,12 @@ def main():
     # [optom, chakana, aksiya_narxi]  — aksiya narxi ham shifrlangan
     narxlar = {m["id"]: [m["narx"], m["chakana"], m["aksiya"]]
                for m in mahsulotlar}
-    ochiq_json = json.dumps({"yangilandi": vaqt, "narxlar": narxlar},
-                            ensure_ascii=False, separators=(",", ":")).encode()
+    # Savdo API kaliti ham shifrlangan faylда — PIN kiritilgachgina buyurtma
+    # yuborish mumkin. URL ochiq bo'lishi mumkin, kalit muhim.
+    ochiq_json = json.dumps({
+        "yangilandi": vaqt, "narxlar": narxlar,
+        "api_url": SAVDO_API_URL, "api_kalit": SAVDO_API_KALIT,
+    }, ensure_ascii=False, separators=(",", ":")).encode()
     salt = secrets.token_bytes(16)
     iv = secrets.token_bytes(12)
     kalit = hashlib.pbkdf2_hmac("sha256", PIN.encode(), salt, 100_000, dklen=32)

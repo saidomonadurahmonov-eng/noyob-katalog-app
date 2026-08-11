@@ -167,6 +167,47 @@ main{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
 .off{background:var(--bad);color:#fff;font-size:12px;padding:3px 10px;border-radius:20px;
      font-weight:700;display:none}
 
+/* mijoz bar (header ostida) */
+.mijoz-bar{display:flex;align-items:center;gap:10px;padding:8px 18px;
+  background:#fffbeb;border-bottom:1px solid #fde68a;font-size:15px}
+.mijoz-bar .m-ic{font-size:18px}
+.mijoz-bar b{font-weight:700}
+.mijoz-bar .m-tel{color:var(--ink2);font-size:13px}
+.mijoz-bar .m-alm{margin-left:auto;border:none;background:#fef3c7;color:#92400e;
+  border-radius:8px;padding:6px 14px;font-weight:700;font-size:13px}
+
+/* mijoz oynasi */
+.sheet.mijoz{max-width:520px;width:100%}
+.m-search{position:relative;margin:16px 20px 8px}
+.m-search .ic{position:absolute;left:12px;top:12px;opacity:.45;font-size:18px}
+.m-search input{width:100%;height:48px;border:1px solid var(--line);border-radius:12px;
+  padding:0 14px 0 42px;font-size:16px;background:#f8fafc;color:var(--ink)}
+.m-search input:focus{outline:none;border-color:var(--gold);background:#fff}
+.m-nat{max-height:46vh;overflow-y:auto;padding:0 20px}
+.m-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  border:none;background:none;padding:12px 8px;border-bottom:1px solid var(--line)}
+.m-row:hover{background:#f8fafc}
+.m-row .m-ic{font-size:22px}
+.m-row .m-t{display:flex;flex-direction:column}
+.m-row .m-t b{font-size:15px}
+.m-row .m-t span{font-size:13px;color:var(--ink2)}
+.m-yuk{padding:20px 8px;color:var(--ink2);text-align:center}
+.m-yangi-tugma{margin:12px 20px 20px;width:calc(100% - 40px);border:2px dashed var(--line);
+  background:none;color:var(--ink);border-radius:12px;padding:13px;font-weight:700}
+#mYangi{padding:20px}
+#mYangi label{display:block;font-size:13px;color:var(--ink2);margin:12px 0 5px;font-weight:600}
+#mYangi input{width:100%;height:48px;border:1px solid var(--line);border-radius:12px;
+  padding:0 14px;font-size:16px;background:#f8fafc;color:var(--ink)}
+#mYangi input:focus{outline:none;border-color:var(--gold);background:#fff}
+#mYangi .btn{width:100%;justify-content:center;margin-top:20px;height:50px}
+.m-orqaga{width:100%;border:none;background:none;color:var(--ink2);margin-top:12px;
+  font-weight:600;padding:8px}
+.m-hint{color:var(--ink2);font-size:12px;text-align:center;margin-top:10px}
+.ord-mijoz{padding:10px 0;font-size:15px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.ord-mijoz.ogoh{color:#92400e}
+.ord-mijoz.ogoh button{border:none;background:#fef3c7;color:#92400e;border-radius:8px;
+  padding:5px 12px;font-weight:700;margin-left:4px}
+
 .sheet.pin{max-width:380px;width:100%;padding:34px 32px;text-align:center}
 .pin-ic{font-size:44px;margin-bottom:8px}
 .sheet.pin h3{margin:0 0 6px;font-size:22px}
@@ -204,6 +245,8 @@ main{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
   <button class="btn" id="ordBtn">🧾 Buyurtma <span class="badge" id="oc">0</span></button>
 </header>
 
+<div class="mijoz-bar" id="mijozBar" style="display:none"></div>
+
 <div class="wrap">
   <aside id="side"></aside>
   <main id="main">
@@ -221,6 +264,27 @@ main{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
 <div class="ov" id="ovO"><div class="sheet">
   <div class="sh-h"><h3>Buyurtma</h3><button class="x" data-close>✕</button></div>
   <div class="ord" id="ordBody"></div>
+</div></div>
+
+<div class="ov" id="ovMijoz"><div class="sheet mijoz">
+  <div class="sh-h"><h3>Mijozni tanlang</h3><button class="x" data-close>✕</button></div>
+  <div id="mQidiruv">
+    <div class="m-search">
+      <span class="ic">🔍</span>
+      <input id="mQ" type="search" placeholder="Telefon yoki ism bo'yicha qidiring..." autocomplete="off">
+    </div>
+    <div class="m-nat" id="mNat"></div>
+    <button class="m-yangi-tugma" onclick="mijozYangiKor('')">+ Yangi mijoz qo'shish</button>
+  </div>
+  <div id="mYangi" style="display:none">
+    <label>Ism-familiya</label>
+    <input id="mIsm" type="text" placeholder="Masalan: Alisher Karimov" autocomplete="off">
+    <label>Telefon</label>
+    <input id="mTel" type="tel" inputmode="tel" placeholder="90 123 45 67" autocomplete="off">
+    <button class="btn" id="mYaratBtn" onclick="mijozYarat()">Qo'shish va boshlash</button>
+    <button class="m-orqaga" onclick="mijozSora()">← Qidiruvga qaytish</button>
+    <div class="m-hint">Yangi mijoz Billz bazasiga qo'shiladi.</div>
+  </div>
 </div></div>
 
 <div class="ov" id="ovPin"><div class="sheet pin">
@@ -253,13 +317,19 @@ let QOLDIQ = localStorage.getItem('noyob_qoldiq') !== '0';
 /* Narxlar ochiq faylda YO'Q — narx_enc.json PIN bilan SHIFRLANGAN.
    PIN kiritilgach deshifrlanadi va planshetda keshlanadi (offline uchun).
    Deshifrlash: PBKDF2-SHA256(100k) -> AES-GCM, sync.py bilan bir xil. */
-let NARX = {};           // id -> [optom, chakana]
+let NARX = {};           // id -> [optom, chakana, aksiya]
 let narxVaqt = '';
+let API_URL = '';        // savdo API (mijoz + buyurtma) — PIN bilan ochiladi
+let API_KALIT = '';
 
 function narxOqi(){
   try{
     const d = JSON.parse(localStorage.getItem('noyob_narx') || 'null');
-    if(d && d.narxlar){ NARX = d.narxlar; narxVaqt = d.yangilandi || ''; return true; }
+    if(d && d.narxlar){
+      NARX = d.narxlar; narxVaqt = d.yangilandi || '';
+      API_URL = d.api_url || ''; API_KALIT = d.api_kalit || '';
+      return true;
+    }
   }catch(e){}
   return false;
 }
@@ -292,6 +362,7 @@ async function narxOch(pin){
       {name:'AES-GCM', iv:b64(enc.iv)}, kalit, b64(enc.data));
     const d = JSON.parse(new TextDecoder().decode(ochiq));
     NARX = d.narxlar || {}; narxVaqt = d.yangilandi || '';
+    API_URL = d.api_url || ''; API_KALIT = d.api_kalit || '';
     localStorage.setItem('noyob_narx', JSON.stringify(d));
     localStorage.setItem('noyob_pin', pin);   // keyingi yangilash uchun
     return {ok:true};
@@ -320,10 +391,14 @@ async function boot(){
   qoldiqTugma();
   side(); oc();
 
+  try{ MIJOZ = JSON.parse(localStorage.getItem('noyob_mijoz')||'null'); }catch(e){ MIJOZ=null; }
+  mijozHeader();
+
   if(narxOqi()){
     // narx keshda — darrov ko'rsatamiz, fonda jimgina yangilaymiz
     draw();
     if(navigator.onLine) narxYangila(true).then(ok => { if(ok) draw(); });
+    if(!MIJOZ) mijozSora();      // narx bor, lekin mijoz tanlanmagan
   }else{
     // birinchi kirish — PIN so'raymiz
     draw();
@@ -349,6 +424,7 @@ async function pinTekshir(){
     $('ovPin').classList.remove('on');
     draw();
     toast('Narxlar ochildi');
+    if(!MIJOZ) mijozSora();      // narx ochildi — endi mijoz tanlanadi
   }else if(r.xato === 'fayl'){
     // narx fayli yo'q (masalan lokal sinov) — katalogni narxsiz ko'rsatamiz
     $('ovPin').classList.remove('on');
@@ -356,6 +432,107 @@ async function pinTekshir(){
   }else{
     pinSora(true);
   }
+}
+
+/* ---------- mijoz tanlash ---------- */
+let MIJOZ = null;        // {id, ism, tel} — kim uchun buyurtma
+let mQidirT;
+
+function mijozHeader(){
+  const el = $('mijozBar');
+  if(MIJOZ){
+    el.innerHTML = `<span class="m-ic">👤</span><b>${esc(MIJOZ.ism)}</b>`+
+      `${MIJOZ.tel?`<span class="m-tel">${esc(MIJOZ.tel)}</span>`:''}`+
+      `<button class="m-alm" onclick="mijozSora()">almashtirish</button>`;
+    el.style.display = 'flex';
+  }else{
+    el.style.display = 'none';
+  }
+}
+
+function mijozSora(){
+  $('ovMijoz').classList.add('on');
+  $('mQ').value = ''; $('mNat').innerHTML = '';
+  $('mYangi').style.display = 'none';
+  $('mQidiruv').style.display = 'block';
+  setTimeout(() => $('mQ').focus(), 100);
+}
+
+$('mQ') && ($('mQ').oninput = e => {
+  const q = e.target.value.trim();
+  clearTimeout(mQidirT);
+  if(q.length < 3){ $('mNat').innerHTML = ''; return; }
+  mQidirT = setTimeout(() => mijozQidir(q), 350);
+});
+
+async function mijozQidir(q){
+  $('mNat').innerHTML = '<div class="m-yuk">Qidirilmoqda...</div>';
+  if(!API_URL || !API_KALIT){
+    $('mNat').innerHTML = '<div class="m-yuk">Ulanish yo‘q — PIN qayta kiriting</div>';
+    return;
+  }
+  try{
+    const r = await fetch(API_URL + '/mijoz/qidir', {
+      method:'POST', headers:{'Content-Type':'application/json','X-Api-Kalit':API_KALIT},
+      body: JSON.stringify({q})
+    });
+    const d = await r.json();
+    const list = d.mijozlar || [];
+    if(!list.length){
+      $('mNat').innerHTML = '<div class="m-yuk">Topilmadi. Pastdan yangi mijoz qo‘shing.</div>';
+      mijozYangiKor(q);
+      return;
+    }
+    $('mNat').innerHTML = list.map(m =>
+      `<button class="m-row" data-id="${esc(m.id)}" data-ism="${esc(m.ism)}" data-tel="${esc(m.tel||'')}">`+
+      `<span class="m-ic">👤</span><span class="m-t"><b>${esc(m.ism)}</b>`+
+      `<span>${esc(m.tel||'—')}</span></span></button>`).join('');
+    $('mNat').querySelectorAll('.m-row').forEach(b => b.onclick = () =>
+      mijozTanla({id:b.dataset.id, ism:b.dataset.ism, tel:b.dataset.tel}));
+  }catch(e){
+    $('mNat').innerHTML = '<div class="m-yuk">Internet yo‘q. Ofisda ulaning.</div>';
+  }
+}
+
+function mijozTanla(m){
+  MIJOZ = m;
+  localStorage.setItem('noyob_mijoz', JSON.stringify(m));
+  mijozHeader();
+  $('ovMijoz').classList.remove('on');
+  toast(`Mijoz: ${m.ism}`);
+}
+
+function mijozYangiKor(boshISM){
+  $('mQidiruv').style.display = 'none';
+  $('mYangi').style.display = 'block';
+  // qidiruv raqamli bo'lsa telefon maydoniga, aks holda ismga
+  const raqamli = /^[\d+ ]+$/.test(boshISM || '');
+  $('mIsm').value = raqamli ? '' : (boshISM || '');
+  $('mTel').value = raqamli ? boshISM : '';
+  setTimeout(() => $(raqamli ? 'mIsm' : 'mTel').focus(), 100);
+}
+
+async function mijozYarat(){
+  const ism = $('mIsm').value.trim();
+  const tel = $('mTel').value.trim();
+  if(ism.length < 2){ toast('Ism kiriting'); return; }
+  $('mYaratBtn').textContent = '⏳'; $('mYaratBtn').disabled = true;
+  try{
+    const r = await fetch(API_URL + '/mijoz/qosh', {
+      method:'POST', headers:{'Content-Type':'application/json','X-Api-Kalit':API_KALIT},
+      body: JSON.stringify({ism, tel})
+    });
+    const d = await r.json();
+    if(d.id){
+      mijozTanla({id:d.id, ism:d.ism||ism, tel:d.tel||tel});
+      toast(d.yangi === false ? 'Mijoz allaqachon bor edi' : 'Yangi mijoz Billz‘ga qo‘shildi');
+    }else{
+      toast(d.error ? 'Xato: '+d.error : 'Qo‘shilmadi');
+    }
+  }catch(e){
+    toast('Internet yo‘q — mijoz qo‘shib bo‘lmadi');
+  }
+  $('mYaratBtn').textContent = 'Qo‘shish va boshlash'; $('mYaratBtn').disabled = false;
 }
 
 /* ---------- yon menyu ---------- */
@@ -573,15 +750,52 @@ function drawOrd(){
       <div class="q">${n?fmt(s):'—'}</div>
       <button class="del" data-d="${id}">🗑</button></div>`;
   }).join('');
-  $('ordBody').innerHTML = rows +
+  const mijozBlok = MIJOZ
+    ? `<div class="ord-mijoz">👤 <b>${esc(MIJOZ.ism)}</b> uchun</div>`
+    : `<div class="ord-mijoz ogoh">⚠ Mijoz tanlanmagan — <button onclick="mijozSora()">tanlash</button></div>`;
+  $('ordBody').innerHTML = mijozBlok + rows +
     `<div class="sum"><span>Jami</span><span>${fmt(jami)} so'm</span></div>
      <div class="acts">
        <button class="btn ghost" onclick="clearOrd()">Tozalash</button>
-       <button class="btn" onclick="shareOrd()">📤 Yuborish</button>
+       <button class="btn" id="yuborBtn" onclick="buyurtmaYubor()">✅ Kassaga yuborish</button>
      </div>`;
   $('ordBody').querySelectorAll('.del').forEach(b => b.onclick = () => {
     delete ORD[b.dataset.d]; save(); drawOrd(); draw();
   });
+}
+
+async function buyurtmaYubor(){
+  const ids = Object.keys(ORD).filter(i => ORD[i] > 0);
+  if(!ids.length){ toast('Buyurtma bo‘sh'); return; }
+  if(!MIJOZ){ toast('Avval mijozni tanlang'); mijozSora(); return; }
+  if(!API_URL || !API_KALIT){ toast('Ulanish yo‘q — PIN qayta kiriting'); return; }
+  if(!navigator.onLine){ toast('Internet yo‘q — buyurtma yuborish uchun ulaning'); return; }
+
+  const btn = $('yuborBtn');
+  btn.textContent = '⏳ Yuborilmoqda...'; btn.disabled = true;
+  const items = ids.map(id => [id, ORD[id]]);
+  try{
+    const r = await fetch(API_URL + '/buyurtma', {
+      method:'POST', headers:{'Content-Type':'application/json','X-Api-Kalit':API_KALIT},
+      body: JSON.stringify({customer_id: MIJOZ.id, items})
+    });
+    const d = await r.json();
+    if(d.ok){
+      const nechta = items.length - (d.failed||[]).length;
+      ORD = {}; save(); drawOrd(); draw();
+      $('ovO').classList.remove('on');
+      // buyurtmadan keyin mijoz ham tozalanadi — keyingi mijozga tayyor
+      alert(`✅ Buyurtma Склад NOYOB kassasiga qoralama sifatida tushdi!\n\n`+
+            `${MIJOZ.ism} · ${nechta} ta tovar`+
+            ((d.failed&&d.failed.length)?`\n\n⚠ ${d.failed.length} ta tovar qoldiq yetmagani uchun qo‘shilmadi.`:''));
+      MIJOZ = null; localStorage.removeItem('noyob_mijoz'); mijozHeader();
+    }else{
+      alert('Xato: ' + (d.error || 'buyurtma yuborilmadi'));
+    }
+  }catch(e){
+    alert('Internet uzildi — buyurtma yuborilmadi. Qayta urinib ko‘ring.');
+  }
+  btn.textContent = '✅ Kassaga yuborish'; btn.disabled = false;
 }
 function clearOrd(){
   if(!confirm('Buyurtma tozalansinmi?')) return;
