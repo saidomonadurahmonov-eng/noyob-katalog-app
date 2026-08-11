@@ -1,0 +1,4 @@
+# Shifrlanmagan narx va PIN — HECH QACHON repoga tushmasin.
+# narx_enc.json esa SHIFRLANGAN — u ochiq Pages'da yotishi mumkin (PIN'siz o'qilmaydi).
+narx.json
+.env
