@@ -986,6 +986,34 @@ $('dlBtn').onclick = async () => {
   navigator.serviceWorker.controller.postMessage({tur:'HAMMASI', royxat}, [ch.port2]);
 };
 
+/* ---------- ORQAGA tugmasi (Android / brauzer) ----------
+   Har doim bitta "qo'riqchi" holat turadi. Orqaga bosilganda ilovadan
+   chiqmaydi — eng ustki ochiq narsa yopiladi, keyin qo'riqchi qayta
+   qo'yiladi. Shunday qilib ilovadan/saytdan hech qachon chiqib ketmaydi. */
+function orqagaBir(){
+  // 1) mahsulot oynasi
+  if($('ovP').classList.contains('on')){ $('ovP').classList.remove('on'); return; }
+  // 2) mijoz oynasi — ichki ko'rinishlar avval
+  if($('ovMijoz').classList.contains('on')){
+    if($('mForma').style.display !== 'none' || $('mKor').style.display !== 'none'){
+      mijozRoyxatKor(); return;                 // batafsil/forma -> ro'yxat
+    }
+    if(MIJOZ){ $('ovMijoz').classList.remove('on'); return; }  // mijoz bor — yopiladi
+    return;                                       // mijoz majburiy — ochiq qoladi
+  }
+  // 3) buyurtma oynasi
+  if($('ovO').classList.contains('on')){ $('ovO').classList.remove('on'); return; }
+  // 4) PIN — majburiy, ochiq qoladi
+  if($('ovPin').classList.contains('on')) return;
+  // 5) qidiruv yoki kategoriya faol — bosh holatga
+  if(qStr){ $('q').value=''; qStr=''; $('clr').style.display='none'; limit=60; side(); draw(); return; }
+  if(cat){ cat=null; limit=60; side(); draw(); $('main').scrollTop=0; return; }
+  // 6) hammasi yopiq — hech narsa qilinmaydi (ilovadan chiqmaydi)
+}
+function armBack(){ history.pushState({noyob:1}, ''); }
+window.addEventListener('popstate', () => { orqagaBir(); armBack(); });
+armBack();   // dastlabki qo'riqchi
+
 /* ---------- umumiy ---------- */
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = e => e.target.closest('.ov').classList.remove('on'));
 document.querySelectorAll('.ov').forEach(o => o.onclick = e => { if(e.target === o) o.classList.remove('on'); });
