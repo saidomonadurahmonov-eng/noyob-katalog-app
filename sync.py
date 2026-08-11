@@ -94,6 +94,17 @@ def qoldiq(p: dict) -> float:
     return 0.0
 
 
+def aksiya_narx(p: dict) -> float:
+    """Billz chegirma (promo) narxi shu do'kon uchun. Yo'q bo'lsa 0."""
+    for s in p.get("shop_prices") or []:
+        if s.get("shop_id") == SHOP_ID:
+            pp = float(s.get("promo_price") or 0)
+            rp = float(s.get("retail_price") or 0)
+            if pp and rp and pp < rp:
+                return pp
+    return 0.0
+
+
 def rasmni_tayyorla(pid: str, url: str) -> bool:
     """Yuklab olib 450px WebP qilib saqlaydi. Bor bo'lsa qayta yuklamaydi."""
     fayl = RASM_PAPKA / f"{pid}.webp"
@@ -148,6 +159,7 @@ def main():
             continue
         url = p.get("main_image_url_full") or ""
         pid = p["id"]
+        aks = aksiya_narx(p)
         m = {
             "id": pid,
             "nom": (p.get("name") or "").strip(),
@@ -155,6 +167,7 @@ def main():
             "barcode": p.get("barcode") or "",
             "narx": round(narx),
             "chakana": round(chakana_narx(p)),
+            "aksiya": round(aks),          # 0 = chegirma yo'q
             "qoldiq": round(qold),
             "guruh": guruh,
             "bolim": bolim or guruh,
@@ -196,8 +209,14 @@ def main():
     vaqt = datetime.now().strftime("%d.%m.%Y %H:%M")
 
     # --- OCHIQ fayl: narxsiz (GitHub Pages'ga chiqadi) ---
-    ochiq = [{k: v for k, v in m.items() if k not in ("narx", "chakana")}
-             for m in mahsulotlar]
+    # Narx maydonlari olib tashlanadi, lekin "aksiyada" bayrog'i (aks:1/0)
+    # qoladi — aksiya bo'limi PIN'siz ham ko'rinishi uchun. Chegirma NARXI
+    # esa shifrlangan faylда (bayroq narxni oshkor qilmaydi).
+    ochiq = []
+    for m in mahsulotlar:
+        o = {k: v for k, v in m.items() if k not in ("narx", "chakana", "aksiya")}
+        o["aks"] = 1 if m["aksiya"] else 0
+        ochiq.append(o)
     (PAPKA / "katalog.json").write_text(json.dumps(
         {"yangilandi": vaqt, "dokon": "Noyob", "daraxt": daraxt, "mahsulotlar": ochiq},
         ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
@@ -206,7 +225,9 @@ def main():
     # Fayl ochiq Pages'da yotadi, lekin PIN'siz o'qib bo'lmaydi. Ilova PIN
     # kiritilganda deshifrlaydi. Shifrlash Web Crypto bilan mos: PBKDF2-SHA256
     # (100k) -> AES-GCM. Xuddi shu algoritm index.html da takrorlanadi.
-    narxlar = {m["id"]: [m["narx"], m["chakana"]] for m in mahsulotlar}
+    # [optom, chakana, aksiya_narxi]  — aksiya narxi ham shifrlangan
+    narxlar = {m["id"]: [m["narx"], m["chakana"], m["aksiya"]]
+               for m in mahsulotlar}
     ochiq_json = json.dumps({"yangilandi": vaqt, "narxlar": narxlar},
                             ensure_ascii=False, separators=(",", ":")).encode()
     salt = secrets.token_bytes(16)

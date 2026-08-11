@@ -91,10 +91,20 @@ main{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
   font-size:11px;font-weight:800;background:rgba(255,255,255,.94);
 }
 .stk.y{color:var(--ok)} .stk.o{color:var(--warn)} .stk.n{color:var(--bad)}
+.aks-b{position:absolute;top:7px;left:7px;background:var(--bad);color:#fff;
+       border-radius:8px;padding:2px 8px;font-size:11px;font-weight:800;letter-spacing:.4px}
 .inf{padding:9px 11px 11px;display:flex;flex-direction:column;gap:5px;flex:1}
 .nm{font-size:13px;line-height:1.3;height:34px;overflow:hidden;color:#334155}
 .pr{font-size:17px;font-weight:800;margin-top:auto}
 .pr s{font-size:12px;font-weight:500;color:var(--ink2);margin-left:6px}
+.pr .eski{font-size:13px;font-weight:600;color:var(--ink2);
+          text-decoration:line-through;margin-left:6px}
+.cat.aks{color:var(--bad);font-weight:700}
+.cat.aks.on{background:#fef3f2;border-left-color:var(--bad)}
+.bigpr .eski{font-size:18px;font-weight:600;color:var(--ink2);
+             text-decoration:line-through;margin-left:8px}
+.bigpr .aks-b{position:static;display:inline-block;margin-left:8px;vertical-align:middle}
+#qoldiqBtn:not(.ghost){background:var(--gold);color:#1a1206}
 .add{
   border:none;border-radius:10px;background:#f1f5f9;color:var(--ink);
   padding:8px;font-weight:700;font-size:13px;
@@ -188,6 +198,7 @@ main{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
   </div>
   <div class="spacer"></div>
   <span class="off" id="off">OFFLINE</span>
+  <button class="btn ghost" id="qoldiqBtn" title="Qoldiqni mijozga ko'rsatish/yashirish">📦 Qoldiq: ON</button>
   <div class="meta"><b id="cnt">—</b><span id="upd">—</span></div>
   <button class="btn ghost" id="dlBtn" title="Ofisda bosing — rasmlar planshetga saqlanadi">⬇ Offline</button>
   <button class="btn" id="ordBtn">🧾 Buyurtma <span class="badge" id="oc">0</span></button>
@@ -232,10 +243,12 @@ const fmt = n => new Intl.NumberFormat('uz-UZ').format(Math.round(n));
 const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 let DB = {mahsulotlar:[], daraxt:[], yangilandi:''};
-let cat = null;          // {guruh, bolim} yoki null = hammasi
+let cat = null;          // {guruh, bolim} yoki 'aksiya' yoki null = hammasi
 let qStr = '';
 let limit = 60;
 let ORD = {};            // id -> soni
+// qoldiqni mijozga ko'rsatish (agent tez almashtiradi). Standart: ko'rsatiladi.
+let QOLDIQ = localStorage.getItem('noyob_qoldiq') !== '0';
 
 /* Narxlar ochiq faylda YO'Q — narx_enc.json PIN bilan SHIFRLANGAN.
    PIN kiritilgach deshifrlanadi va planshetda keshlanadi (offline uchun).
@@ -250,9 +263,14 @@ function narxOqi(){
   }catch(e){}
   return false;
 }
-const p_optom = m => (NARX[m.id] || [0,0])[0];
-const p_chakana = m => (NARX[m.id] || [0,0])[1];
+const p_optom = m => (NARX[m.id] || [0,0,0])[0];
+const p_chakana = m => (NARX[m.id] || [0,0,0])[1];
+const p_aksiya = m => (NARX[m.id] || [0,0,0])[2] || 0;   // 0 = chegirma yo'q
 const narxBor = () => Object.keys(NARX).length > 0;
+// aksiyada: ochiq bayroq (aks) yoki shifrlangan aksiya narxi
+const aksiyadami = m => m.aks === 1 || p_aksiya(m) > 0;
+// sotuv narxi: aksiya bo'lsa aksiya narxi, aks holda optom
+const sotuv_narx = m => p_aksiya(m) || p_optom(m);
 
 const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 
@@ -299,6 +317,7 @@ async function boot(){
   }
   try{ ORD = JSON.parse(localStorage.getItem('noyob_ord')||'{}'); }catch(e){ ORD={}; }
   $('upd').textContent = DB.yangilandi || '';
+  qoldiqTugma();
   side(); oc();
 
   if(narxOqi()){
@@ -344,6 +363,13 @@ function side(){
   const h = [];
   const jami = DB.mahsulotlar.length;
   h.push(btnCat(null, null, 'Hammasi', jami));
+  // Aksiya bo'limi — chegirmadagi mahsulot bo'lsagina ko'rinadi
+  const aksN = DB.mahsulotlar.filter(aksiyadami).length;
+  if(aksN){
+    const on = cat === 'aksiya' && !qStr;
+    h.push(`<button class="cat aks${on?' on':''}" data-aks="1">`+
+           `<span>🏷 Aksiyada</span><i>${aksN}</i></button>`);
+  }
   for(const g of DB.daraxt){
     const n = DB.mahsulotlar.filter(m => m.guruh === g.guruh).length;
     if(!n) continue;
@@ -356,8 +382,12 @@ function side(){
   }
   $('side').innerHTML = h.join('');
   $('side').querySelectorAll('.cat').forEach(b => b.onclick = () => {
-    const g = b.dataset.g || null, bo = b.dataset.b || null;
-    cat = g ? {guruh:g, bolim:bo} : null;
+    if(b.dataset.aks){
+      cat = 'aksiya';
+    }else{
+      const g = b.dataset.g || null, bo = b.dataset.b || null;
+      cat = g ? {guruh:g, bolim:bo} : null;
+    }
     qStr = ''; $('q').value = ''; $('clr').style.display='none';
     limit = 60; side(); draw();
     $('main').scrollTop = 0;
@@ -365,7 +395,9 @@ function side(){
 }
 function btnCat(g, b, label, n){
   // qidiruv paytida hech bir bo'lim yoqilmaydi — natija butun katalogdan
-  const on = !qStr && ((!g && !cat) || (cat && cat.guruh===g && (cat.bolim||null)===(b||null)));
+  const faol = cat && cat !== 'aksiya';
+  const on = !qStr && ((!g && !cat) ||
+             (faol && cat.guruh===g && (cat.bolim||null)===(b||null)));
   return `<button class="cat${on?' on':''}" data-g="${esc(g||'')}" data-b="${esc(b||'')}">`+
          `<span>${esc(label)}</span><i>${n}</i></button>`;
 }
@@ -376,7 +408,11 @@ function filtered(){
   // qidiruv DOIM butun katalog bo'yicha — do'kondor so'ragan narsa
   // qaysi bo'limdaligini agent bilishi shart emas
   if(cat && !qStr){
-    a = a.filter(m => m.guruh === cat.guruh && (!cat.bolim || m.bolim === cat.bolim));
+    if(cat === 'aksiya'){
+      a = a.filter(aksiyadami);
+    }else{
+      a = a.filter(m => m.guruh === cat.guruh && (!cat.bolim || m.bolim === cat.bolim));
+    }
   }
   if(qStr){
     const t = qStr.toLowerCase();
@@ -388,7 +424,9 @@ function filtered(){
 }
 function draw(){
   const a = filtered();
-  $('ttl').textContent = qStr ? 'Qidiruv' : (cat ? (cat.bolim || cat.guruh) : 'Hammasi');
+  const nom = cat === 'aksiya' ? '🏷 Aksiyada'
+            : (cat ? (cat.bolim || cat.guruh) : 'Hammasi');
+  $('ttl').textContent = qStr ? 'Qidiruv' : nom;
   $('sub').textContent = a.length ? `${a.length} ta mahsulot` : '';
   $('cnt').textContent = DB.mahsulotlar.length + ' ta';
   if(!a.length){
@@ -409,9 +447,20 @@ function card(m){
                      : `<span class="no">📦</span>`;
   const inOrd = ORD[m.id];
   const n = p_optom(m);
-  const pr = n ? `${fmt(n)} <s>so'm</s>` : `<s style="margin:0">narx yo‘q</s>`;
+  const aks = p_aksiya(m);
+  // aksiya narxi bo'lsa: yangi narx qalin, eski chizilgan
+  let pr;
+  if(aks && n){
+    const foiz = Math.round((1 - aks / n) * 100);
+    pr = `${fmt(aks)} <s>so'm</s> <span class="eski">${fmt(n)}</span>`;
+  }else{
+    pr = n ? `${fmt(n)} <s>so'm</s>` : `<s style="margin:0">narx yo‘q</s>`;
+  }
+  const aksBelgi = aksiyadami(m) ? `<span class="aks-b">AKSIYA</span>` : '';
+  const stk = QOLDIQ
+    ? `<span class="stk ${cls}">${s>0?s+' dona':'yo‘q'}</span>` : '';
   return `<div class="card" data-id="${m.id}">
-    <div class="ph">${img}<span class="stk ${cls}">${s>0?s+' dona':'yo‘q'}</span></div>
+    <div class="ph">${img}${aksBelgi}${stk}</div>
     <div class="inf">
       <div class="nm">${esc(m.nom)}</div>
       <div class="pr">${pr}</div>
@@ -437,15 +486,28 @@ function openP(id){
   curId = id; curQ = ORD[id] || 1;
   const img = m.rasm ? `<img src="rasm/${m.id}.webp" alt="">` : `<span class="no" style="font-size:64px">📦</span>`;
   const s = m.qoldiq;
+  const n = p_optom(m), aks = p_aksiya(m);
+  let narxBlok;
+  if(narxBor() && aks && n){
+    const foiz = Math.round((1 - aks / n) * 100);
+    narxBlok = `${fmt(aks)} so'm <span class="eski">${fmt(n)}</span> `+
+               `<span class="aks-b">−${foiz}%</span>`+
+               `<small>aksiya narxi · optom</small>`;
+  }else if(narxBor() && n){
+    narxBlok = `${fmt(n)} so'm<small>optom narx`+
+               `${p_chakana(m)>n?` · chakana ${fmt(p_chakana(m))}`:''}</small>`;
+  }else{
+    narxBlok = `—<small>narx yuklanmagan — ofisda internetga ulaning</small>`;
+  }
+  const qoldiqQator = QOLDIQ
+    ? `<div class="kv"><b>Qoldiq</b><span style="color:${s>10?'var(--ok)':s>0?'var(--warn)':'var(--bad)'};font-weight:700">${s>0?s+' dona':'tugagan'}</span></div>`
+    : '';
   $('detBody').innerHTML = `
     <div class="big">${img}</div>
     <div class="side">
       <h4>${esc(m.nom)}</h4>
-      <div class="bigpr">${narxBor()&&p_optom(m) ? fmt(p_optom(m)) + " so'm" : '—'}<small>${
-        narxBor()&&p_optom(m)
-          ? 'optom narx' + (p_chakana(m)>p_optom(m) ? ` · chakana ${fmt(p_chakana(m))}` : '')
-          : 'narx yuklanmagan — ofisda internetga ulaning'}</small></div>
-      <div class="kv"><b>Qoldiq</b><span style="color:${s>10?'var(--ok)':s>0?'var(--warn)':'var(--bad)'};font-weight:700">${s>0?s+' dona':'tugagan'}</span></div>
+      <div class="bigpr">${narxBlok}</div>
+      ${qoldiqQator}
       <div class="kv"><b>Artikul</b><span>${esc(m.sku)||'—'}</span></div>
       <div class="kv"><b>Barkod</b><span>${esc(m.barcode)||'—'}</span></div>
       <div class="kv"><b>Bo'lim</b><span>${esc(m.guruh)} › ${esc(m.bolim)}</span></div>
@@ -477,6 +539,20 @@ function oc(){
   const n = Object.values(ORD).reduce((a,b) => a+b, 0);
   $('oc').textContent = n;
 }
+/* ---------- qoldiqni ko'rsatish/yashirish ---------- */
+function qoldiqTugma(){
+  $('qoldiqBtn').textContent = QOLDIQ ? '📦 Qoldiq: ON' : '📦 Qoldiq: OFF';
+  $('qoldiqBtn').classList.toggle('ghost', QOLDIQ);
+}
+$('qoldiqBtn').onclick = () => {
+  QOLDIQ = !QOLDIQ;
+  localStorage.setItem('noyob_qoldiq', QOLDIQ ? '1' : '0');
+  qoldiqTugma();
+  draw();
+  if($('ovP').classList.contains('on')) openP(curId);   // ochiq oyna ham yangilansin
+  toast(QOLDIQ ? 'Qoldiq ko‘rsatiladi' : 'Qoldiq yashirildi');
+};
+
 $('ordBtn').onclick = () => { drawOrd(); $('ovO').classList.add('on'); };
 function drawOrd(){
   const ids = Object.keys(ORD).filter(i => ORD[i] > 0);
@@ -488,7 +564,7 @@ function drawOrd(){
   const rows = ids.map(id => {
     const m = DB.mahsulotlar.find(x => x.id === id);
     if(!m) return '';
-    const n = p_optom(m);
+    const n = sotuv_narx(m);
     const s = n * ORD[id]; jami += s;
     const img = m.rasm ? `<img src="rasm/${m.id}.webp">` : '📦';
     return `<div class="row">
@@ -517,7 +593,7 @@ function ordText(){
   const lines = ids.map((id, i) => {
     const m = DB.mahsulotlar.find(x => x.id === id);
     if(!m) return '';
-    const n = p_optom(m);
+    const n = sotuv_narx(m);
     const s = n * ORD[id]; jami += s;
     return `${i+1}. ${m.nom} [${m.sku}]\n   ${ORD[id]} × ${n?fmt(n):'—'} = ${n?fmt(s):'—'} so'm`;
   }).filter(Boolean);

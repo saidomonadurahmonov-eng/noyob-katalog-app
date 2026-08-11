@@ -18,6 +18,17 @@ Billz'dan mahsulot, ombor qoldig'i, optom narx va rasmlarni oladi. Rasmlarni
 **Supermarketda (internet yo'q):** ilova o'zi ishlayveradi. Katalog, rasm,
 narx, qidiruv, buyurtma — hammasi keshdan.
 
+## JONLI MANZIL
+
+https://saidomonadurahmonov-eng.github.io/noyob-katalog-app/
+
+Planshetda shu manzilni Chrome'da och → menyu → "Ilovani o'rnatish".
+Bosh ekranda ikonka paydo bo'ladi, to'liq ekran, offline ishlaydi.
+Birinchi ochilishda PIN so'raydi: **2604** (o'zgartirish: sync.py .env da KATALOG_PIN).
+
+Repo: `noyob-katalog-app` (public — narx shifrlangani uchun xavfsiz).
+Yangilash: `python sync.py` → `git add -A && git commit -m "..." && git push`.
+
 ## Narx qayerda turadi
 
 Optom narx **ochiq faylda yo'q** — raqobatchi ko'rmasligi uchun.
