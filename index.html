@@ -167,6 +167,14 @@ main{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
 .off{background:var(--bad);color:#fff;font-size:12px;padding:3px 10px;border-radius:20px;
      font-weight:700;display:none}
 
+/* ---- MIJOZ REJIMI: planshet mijoz qo'lida — boshqaruv yashirinadi ----
+   Agent tugmalari (mijoz almashtirish, online/offline, qoldiq, PIN, offline
+   yuklash) mijozga ko'rinmaydi. Faqat katalog, qidiruv va savat qoladi. */
+body.mijoz-rejim .agent-only{display:none !important}
+body.mijoz-rejim .mijoz-bar .m-alm{display:none}
+body.mijoz-rejim .brand{cursor:default}
+.brand{user-select:none}
+
 /* mijoz bar (header ostida) */
 .mijoz-bar{display:flex;align-items:center;gap:10px;padding:8px 18px;
   background:#fffbeb;border-bottom:1px solid #fde68a;font-size:15px}
@@ -260,11 +268,12 @@ main{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
     <button class="clr" id="clr">✕</button>
   </div>
   <div class="spacer"></div>
-  <span class="off" id="off">OFFLINE</span>
-  <button class="btn ghost" id="pinBtnHdr" title="Narx / ulanishni yangilash (PIN)" onclick="pinSora()">🔒</button>
-  <button class="btn ghost" id="qoldiqBtn" title="Qoldiqni mijozga ko'rsatish/yashirish">📦 Qoldiq: ON</button>
-  <div class="meta"><b id="cnt">—</b><span id="upd">—</span></div>
-  <button class="btn ghost" id="dlBtn" title="Ofisda bosing — rasmlar planshetga saqlanadi">⬇ Offline</button>
+  <span class="off agent-only" id="off">OFFLINE</span>
+  <button class="btn ghost agent-only" id="pinBtnHdr" title="Narx / ulanishni yangilash (PIN)" onclick="pinSora()">🔒</button>
+  <button class="btn ghost agent-only" id="qoldiqBtn" title="Qoldiqni mijozga ko'rsatish/yashirish">📦 Qoldiq: ON</button>
+  <div class="meta agent-only"><b id="cnt">—</b><span id="upd">—</span></div>
+  <button class="btn ghost agent-only" id="dlBtn" title="Ofisda bosing — rasmlar planshetga saqlanadi">⬇ Offline</button>
+  <button class="btn ghost agent-only" id="agentBtn" title="Mijozlar / agent paneli" onclick="agentPanel()">👥 Mijozlar</button>
   <button class="btn" id="ordBtn">🧾 Buyurtma <span class="badge" id="oc">0</span></button>
 </header>
 
@@ -427,6 +436,9 @@ async function boot(){
 
   try{ MIJOZ = JSON.parse(localStorage.getItem('noyob_mijoz')||'null'); }catch(e){ MIJOZ=null; }
   mijozHeader();
+  // Mijoz tanlangan bo'lsa sessiya davom etadi (tasodifan qayta yuklansa
+  // savat va mijoz saqlanadi) — planshet mijoz qo'lida deb hisoblaymiz.
+  rejimQoy(MIJOZ ? 'mijoz' : 'agent');
 
   if(narxOqi()){
     // narx keshda — darrov ko'rsatamiz, fonda jimgina yangilaymiz
@@ -501,11 +513,46 @@ function mijozHeader(){
   }
 }
 
-// oynani ochish + ro'yxatni ko'rsatish
-function mijozSora(){
+/* ---------- REJIM: agent / mijoz ----------
+   SmartUp modeli: agent mijozni tanlaydi, keyin planshetni MIJOZGA uzatadi.
+   Mijoz qo'lida faqat katalog, qidiruv va savat bo'lishi kerak — boshqaruv
+   tugmalari yashiriladi, aks holda mijoz sozlamalarni buzib qo'yishi mumkin.
+   Agent panelga qaytish: brend logotipni 2 soniya bosib turish. */
+let REJIM = 'agent';
+
+function rejimQoy(r){
+  REJIM = r;
+  document.body.classList.toggle('mijoz-rejim', r === 'mijoz');
+}
+
+// Agent paneli — mijozlar ro'yxati (boshqaruv shu yerda)
+function agentPanel(){
+  rejimQoy('agent');
   $('ovMijoz').classList.add('on');
   mijozRoyxatKor();
 }
+
+// oynani ochish + ro'yxatni ko'rsatish
+function mijozSora(){
+  agentPanel();
+}
+
+/* Brend logotipni uzoq bosish (2s) — mijoz rejimidan agent paneliga qaytish.
+   Mijoz tasodifan topmaydi, agent esa bir harakatda qaytadi. */
+(function brendBosish(){
+  const b = document.querySelector('.brand');
+  if(!b) return;
+  let t = null;
+  const boshla = () => {
+    if(REJIM !== 'mijoz') return;
+    t = setTimeout(() => { t = null; agentPanel(); toast('Agent paneli'); }, 2000);
+  };
+  const tugat = () => { if(t){ clearTimeout(t); t = null; } };
+  b.addEventListener('touchstart', boshla, {passive:true});
+  b.addEventListener('mousedown', boshla);
+  ['touchend','touchmove','touchcancel','mouseup','mouseleave']
+    .forEach(e => b.addEventListener(e, tugat));
+})();
 function _mKorinish(qaysi){
   $('mRoyxat').style.display = qaysi === 'royxat' ? 'block' : 'none';
   $('mForma').style.display = qaysi === 'forma' ? 'block' : 'none';
@@ -589,6 +636,7 @@ function mijozTanla(m){
   $('ovMijoz').classList.remove('on');
   cat = null; qStr = ''; $('q').value=''; limit = 60; side(); draw();
   $('main').scrollTop = 0;
+  rejimQoy('mijoz');          // planshet endi mijoz qo'liga beriladi
   toast(`${m.ism} — katalog ochildi, mijozga bering`);
 }
 
@@ -941,6 +989,7 @@ async function buyurtmaYubor(){
             `${MIJOZ.ism} · ${nechta} ta tovar`+
             ((d.failed&&d.failed.length)?`\n\n⚠ ${d.failed.length} ta tovar qoldiq yetmagani uchun qo‘shilmadi.`:''));
       MIJOZ = null; localStorage.removeItem('noyob_mijoz'); mijozHeader();
+      agentPanel();   // buyurtma ketdi — planshet agentga qaytadi
     }else{
       alert('Xato: ' + (d.error || 'buyurtma yuborilmadi'));
     }
@@ -1020,8 +1069,10 @@ function orqagaBir(){
     if($('mForma').style.display !== 'none' || $('mKor').style.display !== 'none'){
       mijozRoyxatKor(); return;                 // batafsil/forma -> ro'yxat
     }
-    if(MIJOZ){ $('ovMijoz').classList.remove('on'); return; }  // mijoz bor — yopiladi
-    return;                                       // mijoz majburiy — ochiq qoladi
+    // agent rejimida panel yopilaveradi (👥 tugmasi bilan qayta ochiladi),
+    // mijoz tanlangan bo'lsa ham yopiladi
+    if(REJIM === 'agent' || MIJOZ){ $('ovMijoz').classList.remove('on'); return; }
+    return;
   }
   // 4) buyurtma oynasi
   if($('ovO').classList.contains('on')){ $('ovO').classList.remove('on'); return; }
