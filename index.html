@@ -175,6 +175,13 @@ body.mijoz-rejim .mijoz-bar .m-alm{display:none}
 body.mijoz-rejim .brand{cursor:default}
 .brand{user-select:none}
 
+/* o'tgan buyurtmani takrorlash tavsiyasi */
+.oxirgi-bar{display:flex;align-items:center;gap:12px;padding:9px 18px;
+  background:#eff6ff;border-bottom:1px solid #bfdbfe;font-size:15px;color:#1e40af}
+.oxirgi-bar button{border:none;background:#1e40af;color:#fff;border-radius:9px;
+  padding:8px 16px;font-weight:700;font-size:14px;margin-left:auto;cursor:pointer}
+.oxirgi-bar button.yop{background:#dbeafe;color:#1e40af;margin-left:0;padding:8px 12px}
+
 /* mijoz bar (header ostida) */
 .mijoz-bar{display:flex;align-items:center;gap:10px;padding:8px 18px;
   background:#fffbeb;border-bottom:1px solid #fde68a;font-size:15px}
@@ -273,11 +280,13 @@ body.mijoz-rejim .brand{cursor:default}
   <button class="btn ghost agent-only" id="qoldiqBtn" title="Qoldiqni mijozga ko'rsatish/yashirish">📦 Qoldiq: ON</button>
   <div class="meta agent-only"><b id="cnt">—</b><span id="upd">—</span></div>
   <button class="btn ghost agent-only" id="dlBtn" title="Ofisda bosing — rasmlar planshetga saqlanadi">⬇ Offline</button>
+  <button class="btn ghost agent-only" id="navbatBtn" title="Yuborilmagan buyurtmalar — bosib jo'nating" onclick="navbatJonat(false)" style="display:none">📤 Navbatда: 0</button>
   <button class="btn ghost agent-only" id="agentBtn" title="Mijozlar / agent paneli" onclick="agentPanel()">👥 Mijozlar</button>
   <button class="btn" id="ordBtn">🧾 Buyurtma <span class="badge" id="oc">0</span></button>
 </header>
 
 <div class="mijoz-bar" id="mijozBar" style="display:none"></div>
+<div class="oxirgi-bar" id="oxirgiBar" style="display:none"></div>
 
 <div class="wrap">
   <aside id="side"></aside>
@@ -436,6 +445,8 @@ async function boot(){
 
   try{ MIJOZ = JSON.parse(localStorage.getItem('noyob_mijoz')||'null'); }catch(e){ MIJOZ=null; }
   mijozHeader();
+  navbatKorsat();
+  if(navigator.onLine) setTimeout(() => navbatJonat(true), 3000);  // qolgan buyurtmalar
   // Mijoz tanlangan bo'lsa sessiya davom etadi (tasodifan qayta yuklansa
   // savat va mijoz saqlanadi) — planshet mijoz qo'lida deb hisoblaymiz.
   rejimQoy(MIJOZ ? 'mijoz' : 'agent');
@@ -528,6 +539,7 @@ function rejimQoy(r){
 // Agent paneli — mijozlar ro'yxati (boshqaruv shu yerda)
 function agentPanel(){
   rejimQoy('agent');
+  const ob = $('oxirgiBar'); if(ob) ob.style.display = 'none';
   $('ovMijoz').classList.add('on');
   mijozRoyxatKor();
 }
@@ -638,6 +650,44 @@ function mijozTanla(m){
   $('main').scrollTop = 0;
   rejimQoy('mijoz');          // planshet endi mijoz qo'liga beriladi
   toast(`${m.ism} — katalog ochildi, mijozga bering`);
+  oxirgiTaklif();             // o'tgan buyurtmasi bo'lsa — takrorlashni taklif
+}
+
+/* ---------- OXIRGI BUYURTMANI TAKRORLASH ----------
+   Ulgurji savdoда do'kondor deyarli bir xil tovarni oladi. Har safar
+   katalogdan qayta topish o'rniga — bitta tugma. Billz'ning o'z tarixi
+   bizga yopiq (403), shuning uchun O'Z jurnalimizdan olinadi. */
+async function oxirgiTaklif(){
+  const el = $('oxirgiBar');
+  el.style.display = 'none';
+  if(!MIJOZ || !API_URL || !API_KALIT || !navigator.onLine) return;
+  try{
+    const r = await fetch(`${API_URL}/mijoz/${encodeURIComponent(MIJOZ.id)}/oxirgi`,
+                          {headers:{'X-Api-Kalit':API_KALIT}});
+    const d = await r.json();
+    if(!d.bor || !(d.items||[]).length) return;
+    OXIRGI = d;
+    const sana = (d.vaqt||'').slice(0,10).split('-').reverse().join('.');
+    el.innerHTML = `<span>🔁 <b>${d.items.length} ta tovar</b> — `+
+      `o'tgan buyurtma (${sana})</span>`+
+      `<button onclick="oxirginiQosh()">Savatga qo'shish</button>`+
+      `<button class="yop" onclick="this.parentNode.style.display='none'">✕</button>`;
+    el.style.display = 'flex';
+  }catch(e){}
+}
+let OXIRGI = null;
+function oxirginiQosh(){
+  if(!OXIRGI) return;
+  let qoshildi = 0, yoq = 0;
+  for(const [pid, qty] of OXIRGI.items){
+    // faqat katalogда hali bor tovarlar (qoldiq tugagani tushmaydi)
+    if(DB.mahsulotlar.some(m => m.id === pid)){
+      ORD[pid] = (ORD[pid] || 0) + qty; qoshildi++;
+    }else yoq++;
+  }
+  save(); draw();
+  $('oxirgiBar').style.display = 'none';
+  toast(`${qoshildi} ta tovar savatga qo'shildi` + (yoq?` · ${yoq} tasi endi yo'q`:''));
 }
 
 // KO'RISH — batafsil
@@ -964,27 +1014,87 @@ function drawOrd(){
   });
 }
 
+/* ---------- OFFLINE BUYURTMA NAVBATI ----------
+   Supermarketда internet yo'qolishi muqarrar. Buyurtma yuborilmasa
+   yo'qolmaydi — planshetда navbatga tushadi va aloqa tiklanganда o'zi
+   jo'natiladi. Agent kutib turmaydi, keyingi mijozga o'taveradi. */
+function navbatOqi(){
+  try{ return JSON.parse(localStorage.getItem('noyob_navbat') || '[]'); }
+  catch(e){ return []; }
+}
+function navbatYoz(n){
+  try{ localStorage.setItem('noyob_navbat', JSON.stringify(n)); }catch(e){}
+  navbatKorsat();
+}
+function navbatKorsat(){
+  const n = navbatOqi().length;
+  const el = $('navbatBtn');
+  if(!el) return;
+  el.style.display = n ? 'flex' : 'none';
+  el.textContent = `📤 Navbatда: ${n}`;
+}
+
+async function navbatJonat(jim){
+  const n = navbatOqi();
+  if(!n.length || !navigator.onLine || !API_URL || !API_KALIT) return 0;
+  let ketdi = 0;
+  const qolgan = [];
+  for(const b of n){
+    try{
+      const r = await fetch(API_URL + '/buyurtma', {
+        method:'POST', headers:{'Content-Type':'application/json','X-Api-Kalit':API_KALIT},
+        body: JSON.stringify(b)
+      });
+      const d = await r.json();
+      if(d.ok) ketdi++; else qolgan.push(b);
+    }catch(e){ qolgan.push(b); }
+  }
+  navbatYoz(qolgan);
+  if(ketdi && !jim) toast(`${ketdi} ta buyurtma kassaga yuborildi`);
+  return ketdi;
+}
+addEventListener('online', () => { net(); navbatJonat(false); });
+
 async function buyurtmaYubor(){
   const ids = Object.keys(ORD).filter(i => ORD[i] > 0);
   if(!ids.length){ toast('Buyurtma bo‘sh'); return; }
   if(!MIJOZ){ toast('Avval mijozni tanlang'); mijozSora(); return; }
   if(!API_URL || !API_KALIT){ toast('Ulanish yo‘q — PIN qayta kiriting'); pinSora(); return; }
-  if(!navigator.onLine){ toast('Internet yo‘q — buyurtma yuborish uchun ulaning'); return; }
 
   const btn = $('yuborBtn');
   btn.textContent = '⏳ Yuborilmoqda...'; btn.disabled = true;
+
+  // jurnal uchun: nom va summa ham yuboriladi (takrorlash/hisobotда ko'rinadi)
   const items = ids.map(id => [id, ORD[id]]);
+  const nomlar = {}; let summa = 0;
+  for(const id of ids){
+    const m = DB.mahsulotlar.find(x => x.id === id);
+    if(m){ nomlar[id] = m.nom; summa += sotuv_narx(m) * ORD[id]; }
+  }
+  const paket = {customer_id: MIJOZ.id, mijoz: MIJOZ.ism, items, nomlar, summa};
+
+  const navbatga = (sabab) => {
+    const n = navbatOqi(); n.push(paket); navbatYoz(n);
+    ORD = {}; save(); drawOrd(); draw();
+    $('ovO').classList.remove('on');
+    alert(`📤 ${sabab}\n\nBuyurtma planshetда saqlandi va internet paydo `+
+          `bo‘lganда o‘zi yuboriladi.\n\n${MIJOZ.ism} · ${items.length} ta tovar`);
+    MIJOZ = null; localStorage.removeItem('noyob_mijoz'); mijozHeader();
+    agentPanel();
+  };
+
+  if(!navigator.onLine){ navbatga('Internet yo‘q.'); btn.textContent='✅ Kassaga yuborish'; btn.disabled=false; return; }
+
   try{
     const r = await fetch(API_URL + '/buyurtma', {
       method:'POST', headers:{'Content-Type':'application/json','X-Api-Kalit':API_KALIT},
-      body: JSON.stringify({customer_id: MIJOZ.id, items})
+      body: JSON.stringify(paket)
     });
     const d = await r.json();
     if(d.ok){
       const nechta = items.length - (d.failed||[]).length;
       ORD = {}; save(); drawOrd(); draw();
       $('ovO').classList.remove('on');
-      // buyurtmadan keyin mijoz ham tozalanadi — keyingi mijozga tayyor
       alert(`✅ Buyurtma Склад NOYOB kassasiga qoralama sifatida tushdi!\n\n`+
             `${MIJOZ.ism} · ${nechta} ta tovar`+
             ((d.failed&&d.failed.length)?`\n\n⚠ ${d.failed.length} ta tovar qoldiq yetmagani uchun qo‘shilmadi.`:''));
@@ -994,7 +1104,7 @@ async function buyurtmaYubor(){
       alert('Xato: ' + (d.error || 'buyurtma yuborilmadi'));
     }
   }catch(e){
-    alert('Internet uzildi — buyurtma yuborilmadi. Qayta urinib ko‘ring.');
+    navbatga('Aloqa uzildi.');       // yo'qotmaymiz — navbatga
   }
   btn.textContent = '✅ Kassaga yuborish'; btn.disabled = false;
 }
