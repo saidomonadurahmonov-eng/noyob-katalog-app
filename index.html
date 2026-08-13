@@ -175,6 +175,25 @@ body.mijoz-rejim .mijoz-bar .m-alm{display:none}
 body.mijoz-rejim .brand{cursor:default}
 .brand{user-select:none}
 
+/* kun yakuni */
+.sheet.hisobot{max-width:520px;width:100%}
+.h-sana{text-align:center;color:var(--ink2);font-size:14px;padding:14px 0 4px}
+.h-kartalar{display:flex;gap:10px;padding:6px 20px 16px;flex-wrap:wrap}
+.h-k{flex:1;min-width:96px;background:#f8fafc;border-radius:14px;padding:14px 10px;text-align:center}
+.h-k.keng{flex:1 0 100%;background:#fffbeb}
+.h-k b{display:block;font-size:24px;font-weight:800}
+.h-k span{font-size:12px;color:var(--ink2)}
+.h-royxat{padding:0 20px;max-height:38vh;overflow-y:auto}
+.h-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.h-n{width:24px;color:var(--ink2);font-size:13px}
+.h-m{flex:1;display:flex;flex-direction:column;min-width:0}
+.h-m b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.h-m span{font-size:12px;color:var(--ink2)}
+.h-s{font-weight:800;white-space:nowrap}
+.h-kun{display:flex;gap:10px;padding:16px 20px 20px}
+.h-kun button{flex:1;border:1px solid var(--line);background:#fff;border-radius:12px;
+  padding:12px;font-weight:700;cursor:pointer}
+
 /* o'tgan buyurtmani takrorlash tavsiyasi */
 .oxirgi-bar{display:flex;align-items:center;gap:12px;padding:9px 18px;
   background:#eff6ff;border-bottom:1px solid #bfdbfe;font-size:15px;color:#1e40af}
@@ -281,6 +300,7 @@ body.mijoz-rejim .brand{cursor:default}
   <div class="meta agent-only"><b id="cnt">—</b><span id="upd">—</span></div>
   <button class="btn ghost agent-only" id="dlBtn" title="Ofisda bosing — rasmlar planshetga saqlanadi">⬇ Offline</button>
   <button class="btn ghost agent-only" id="navbatBtn" title="Yuborilmagan buyurtmalar — bosib jo'nating" onclick="navbatJonat(false)" style="display:none">📤 Navbatда: 0</button>
+  <button class="btn ghost agent-only" id="hisobotBtn" title="Kun yakuni" onclick="hisobotKor()">📊</button>
   <button class="btn ghost agent-only" id="agentBtn" title="Mijozlar / agent paneli" onclick="agentPanel()">👥 Mijozlar</button>
   <button class="btn" id="ordBtn">🧾 Buyurtma <span class="badge" id="oc">0</span></button>
 </header>
@@ -336,6 +356,11 @@ body.mijoz-rejim .brand{cursor:default}
 
   <!-- batafsil ko'rish -->
   <div id="mKor" style="display:none"></div>
+</div></div>
+
+<div class="ov" id="ovHisobot"><div class="sheet hisobot">
+  <div class="sh-h"><h3>📊 Kun yakuni</h3><button class="x" data-close>✕</button></div>
+  <div id="hisobotBody"><div class="m-yuk">Yuklanmoqda...</div></div>
 </div></div>
 
 <div class="ov" id="ovPin"><div class="sheet pin">
@@ -651,6 +676,50 @@ function mijozTanla(m){
   rejimQoy('mijoz');          // planshet endi mijoz qo'liga beriladi
   toast(`${m.ism} — katalog ochildi, mijozga bering`);
   oxirgiTaklif();             // o'tgan buyurtmasi bo'lsa — takrorlashni taklif
+}
+
+/* ---------- KUN YAKUNI ---------- */
+async function hisobotKor(kun){
+  $('ovHisobot').classList.add('on');
+  const b = $('hisobotBody');
+  b.innerHTML = '<div class="m-yuk">Yuklanmoqda...</div>';
+  if(!API_URL || !API_KALIT){
+    b.innerHTML = '<div class="m-yuk">Ulanish yo‘q.<br><button class="btn" style="margin-top:12px" onclick="pinSora()">🔒 PIN kiriting</button></div>';
+    return;
+  }
+  if(!navigator.onLine){
+    b.innerHTML = '<div class="m-yuk">Internet yo‘q — hisobot serverdan olinadi.</div>';
+    return;
+  }
+  try{
+    const u = API_URL + '/hisobot' + (kun ? '?kun=' + kun : '');
+    const d = await (await fetch(u, {headers:{'X-Api-Kalit':API_KALIT}})).json();
+    const sana = d.kun.split('-').reverse().join('.');
+    const qatorlar = (d.royxat||[]).map((r,i) =>
+      `<div class="h-row"><span class="h-n">${i+1}</span>`+
+      `<span class="h-m"><b>${esc(r.mijoz||'—')}</b><span>${r.tovar} ta tovar · ${r.vaqt}</span></span>`+
+      `<span class="h-s">${fmt(r.summa)}</span></div>`).join('');
+    b.innerHTML =
+      `<div class="h-sana">${sana}</div>
+       <div class="h-kartalar">
+         <div class="h-k"><b>${d.buyurtma}</b><span>buyurtma</span></div>
+         <div class="h-k"><b>${d.mijoz}</b><span>mijoz</span></div>
+         <div class="h-k keng"><b>${fmt(d.summa)}</b><span>so'm</span></div>
+       </div>`+
+      (qatorlar ? `<div class="h-royxat">${qatorlar}</div>`
+                : `<div class="m-yuk">Bu kunda buyurtma bo‘lmagan.</div>`)+
+      `<div class="h-kun">
+         <button onclick="hisobotKor('${hKun(-1, d.kun)}')">← Kecha</button>
+         <button onclick="hisobotKor()">Bugun</button>
+       </div>`;
+  }catch(e){
+    b.innerHTML = '<div class="m-yuk">Hisobot olinmadi.</div>';
+  }
+}
+function hKun(qadam, kun){
+  const t = new Date(kun + 'T12:00:00');
+  t.setDate(t.getDate() + qadam);
+  return t.toISOString().slice(0,10);
 }
 
 /* ---------- OXIRGI BUYURTMANI TAKRORLASH ----------
@@ -1172,7 +1241,8 @@ $('dlBtn').onclick = async () => {
 function orqagaBir(){
   // 1) PIN — eng ustda ochiladi; narx bor bo'lsa yopiladi, bo'lmasa majburiy
   if($('ovPin').classList.contains('on')){ if(narxBor()) pinYopish(); return; }
-  // 2) mahsulot oynasi
+  // 2) hisobot / mahsulot oynasi
+  if($('ovHisobot').classList.contains('on')){ $('ovHisobot').classList.remove('on'); return; }
   if($('ovP').classList.contains('on')){ $('ovP').classList.remove('on'); return; }
   // 3) mijoz oynasi — ichki ko'rinishlar avval
   if($('ovMijoz').classList.contains('on')){
