@@ -575,8 +575,18 @@ function rejimQoy(r){
   document.body.classList.toggle('mijoz-rejim', r === 'mijoz');
 }
 
-// Agent paneli — mijozlar ro'yxati (boshqaruv shu yerda)
-function agentPanel(){
+/* Agent paneli — mijozlar ro'yxati, qarzlar, kunlik tushum: boshqaruv shu yerda.
+
+   QULF: planshet mijoz qo'lida bo'lganда bu panel HECH QANDAY yo'l bilan
+   ochilmasligi kerak. Faqat agentning ataylab qilgan imosi (brendni uzoq
+   bosish yoki uch marta bosish) `agentTasdiqi=true` bilan chaqiradi.
+   Aks holda buyurtma yuborilgach yoki "mijoz tanlanmagan" holatida panel
+   o'zi ochilib, mijozga butun bazani ko'rsatib qo'yardi. */
+function agentPanel(agentTasdiqi){
+  if(REJIM === 'mijoz' && agentTasdiqi !== true){
+    toast('Planshetni agentga qaytaring');
+    return;
+  }
   rejimQoy('agent');
   const ob = $('oxirgiBar'); if(ob) ob.style.display = 'none';
   $('ovMijoz').classList.add('on');
@@ -599,31 +609,41 @@ function mijozSora(){
   const ochish = (usul) => {
     if(REJIM !== 'mijoz') return;
     tozala();
-    agentPanel();
+    agentPanel(true);          // yagona tasdiqlangan chiqish nuqtasi
     toast('Agent paneli');
   };
 
   /* --- 1-yo'l: uzoq bosish (1.2s) --- */
   // MUHIM: barmoq bosib turganда doimo mayda siljiydi. Shuning uchun
   // touchmove'да darrov bekor qilinmaydi — 14px dan ortiq siljiсагina.
-  let t = null, x0 = 0, y0 = 0;
+  let t = null, x0 = 0, y0 = 0, tid = null;
   const KUT = 1200, CHIDAM = 14;
 
   function tozala(){
     if(t){ clearTimeout(t); t = null; }
+    tid = null;
     b.classList.remove('bosilmoqda');
   }
   function boshla(e){
     if(REJIM !== 'mijoz') return;
-    const p = (e.touches && e.touches[0]) || e;
+    // touchstart: aynan hozir tushgan barmoq. `e.touches` butun ekrandagi
+    // barmoqlar ro'yxati — planshetni ushlab turgan bosh barmoq birinchi
+    // bo'lib chiqishi mumkin, shuning uchun changedTouches ishlatiladi.
+    const p = (e.changedTouches && e.changedTouches[0]) || e;
+    if(t) clearTimeout(t);                  // tozala() emas — tid saqlanadi
+    tid = (p.identifier !== undefined) ? p.identifier : null;
     x0 = p.clientX || 0; y0 = p.clientY || 0;
-    tozala();
     b.classList.add('bosilmoqda');          // ko'rinadigan javob
     t = setTimeout(() => ochish('uzoq'), KUT);
   }
   function siljidi(e){
     if(!t) return;
-    const p = (e.touches && e.touches[0]) || e;
+    let p = e;
+    if(e.changedTouches){                   // faqat O'SHA barmoqni kuzatamiz
+      p = null;
+      for(const tt of e.changedTouches){ if(tt.identifier === tid){ p = tt; break; } }
+      if(!p) return;                        // boshqa barmoq qimirladi — e'tiborsiz
+    }
     const dx = (p.clientX || 0) - x0, dy = (p.clientY || 0) - y0;
     if(Math.hypot(dx, dy) > CHIDAM) tozala();   // haqiqiy surish — bekor
   }
