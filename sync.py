@@ -270,6 +270,22 @@ def main():
         "yangilandi": vaqt,
     }, separators=(",", ":")), encoding="utf-8")
 
+    # --- Narxlarni savdo API'ga ham yuboramiz ---
+    # Telegram Mini App (optom do'kondorlar) narxni shundan oladi: u yerда
+    # kirish Telegram imzosi bilan tekshiriladi, PIN ishlatilmaydi.
+    if SAVDO_API_KALIT:
+        try:
+            rr = requests.post(
+                SAVDO_API_URL + "/narx/yukla",
+                data=json.dumps({"yangilandi": vaqt, "narxlar": narxlar},
+                                ensure_ascii=False).encode("utf-8"),
+                headers={"X-Api-Kalit": SAVDO_API_KALIT,
+                         "Content-Type": "application/json"},
+                timeout=90)
+            print(f"narx API'ga yuborildi: {'OK' if rr.ok else 'XATO ' + str(rr.status_code)}")
+        except Exception as e:  # noqa: BLE001
+            print(f"narx API'ga yuborilmadi: {type(e).__name__}")
+
     hajm = sum(f.stat().st_size for f in RASM_PAPKA.glob("*.webp"))
     print(f"\nkatalog.json (OCHIQ, narxsiz): {len(ochiq)} mahsulot, {len(daraxt)} guruh")
     print(f"narx_enc.json (PIN bilan SHIFRLANGAN): {len(mahsulotlar)} narx")
