@@ -75,13 +75,18 @@ _qulf = threading.Lock()
 
 
 def billz_kirish() -> dict:
-    token = ""
-    for q in pathlib.Path(r"C:\Users\user\billz-bot\.env").read_text(
-            encoding="utf-8").splitlines():
-        if q.strip().startswith("BILLZ_SECRET_TOKEN="):
-            token = q.split("=", 1)[1].strip()
+    """Billz ochiq API'siga kirish. Panel tokeni KERAK EMAS — shu sabab
+    sinxronni bulutda (GitHub Actions) ham yurgizsa bo'ladi."""
+    token = _env("BILLZ_SECRET_TOKEN")
+    if not token:                      # lokal kompyuterdagi eski joyi
+        f = pathlib.Path(r"C:\Users\user\billz-bot\.env")
+        if f.exists():
+            for q in f.read_text(encoding="utf-8").splitlines():
+                if q.strip().startswith("BILLZ_SECRET_TOKEN="):
+                    token = q.split("=", 1)[1].strip()
     if not token:
-        sys.exit("BILLZ_SECRET_TOKEN topilmadi")
+        sys.exit("BILLZ_SECRET_TOKEN topilmadi "
+                 "(muhit o'zgaruvchisi yoki billz-bot/.env)")
     d = requests.post(f"{HOST}/v1/auth/login",
                       json={"secret_token": token}, timeout=30).json()
     t = (d.get("data") or {}).get("access_token") or d.get("access_token")
@@ -129,21 +134,38 @@ def aksiya_narx(p: dict) -> float:
     return 0.0
 
 
+# Qaysi webp qaysi Billz manzilidan olingani — manzil o'zgarsa (ya'ni
+# Billz'ga YANGI rasm yuklangan bo'lsa) katalog o'zi yangilanadi.
+# Busiz tuzatilgan kartalar katalogga hech qachon yetib bormaydi.
+MANBA_F = PAPKA / "rasm_manba.json"
+try:
+    MANBA = json.loads(MANBA_F.read_text(encoding="utf-8"))
+except (OSError, ValueError):
+    MANBA = {}
+_mqulf = threading.Lock()
+
+
 def rasmni_tayyorla(pid: str, url: str) -> bool:
-    """Yuklab olib 450px WebP qilib saqlaydi. Bor bo'lsa qayta yuklamaydi."""
+    """Yuklab olib 450px WebP qilib saqlaydi.
+
+    Fayl bor VA manbasi o'sha-o'sha bo'lsa qayta yuklamaydi. Billz'da rasm
+    almashtirilgan bo'lsa manzil o'zgaradi — u holda qayta yuklaymiz.
+    """
     fayl = RASM_PAPKA / f"{pid}.webp"
-    if fayl.exists():
+    if fayl.exists() and MANBA.get(pid) == url:
         return True
     try:
         r = requests.get(url, timeout=60)
         if not r.ok:
-            return False
+            return fayl.exists()
         im = Image.open(io.BytesIO(r.content)).convert("RGB")
         im.thumbnail((RASM_OLCHAM, RASM_OLCHAM), Image.LANCZOS)
         im.save(fayl, "WEBP", quality=RASM_SIFAT, method=4)
+        with _mqulf:
+            MANBA[pid] = url
         return True
     except Exception:
-        return False
+        return fayl.exists()
 
 
 def main():
@@ -218,6 +240,10 @@ def main():
             if i % 200 == 0:
                 print(f"  {i}/{len(rasmli)}")
     print(f"  tayyor: {ok} | xato: {xato}")
+    try:
+        MANBA_F.write_text(json.dumps(MANBA, ensure_ascii=False), encoding="utf-8")
+    except OSError as e:
+        print(f"  rasm_manba.json yozilmadi: {e}")
 
     # rasmi yuklanmaganlarni belgilaymiz
     bor = {f.stem for f in RASM_PAPKA.glob("*.webp")}
@@ -289,7 +315,9 @@ def main():
     hajm = sum(f.stat().st_size for f in RASM_PAPKA.glob("*.webp"))
     print(f"\nkatalog.json (OCHIQ, narxsiz): {len(ochiq)} mahsulot, {len(daraxt)} guruh")
     print(f"narx_enc.json (PIN bilan SHIFRLANGAN): {len(mahsulotlar)} narx")
-    print(f"  PIN: {PIN}  (o'zgartirish: .env da KATALOG_PIN=)")
+    # PIN jurnalga YOZILMAYDI — sinxron ommaviy repo'ning Actions jurnalida
+    # ham yuriladi, u yerda har bir satr hammaga ko'rinadi.
+    print(f"  PIN: {'*' * len(PIN)}  (o'zgartirish: .env da KATALOG_PIN=)")
     print(f"rasm papkasi: {len(bor)} ta fayl, {hajm/1024/1024:.1f} MB")
 
 

@@ -1,0 +1,69 @@
+# NOYOB katalog — Billz'dan avtomat sinxronizatsiya.
+#
+# Karta yasash liniyasi to'xtatildi: rasmlarni Billz'ga hodim o'zi qo'yadi.
+# Bu ish oqimi shunchaki Billz'dagi holatni katalogga ko'chiradi —
+# mahsulot, narx, qoldiq va RASMLAR.
+#
+# Ishga tushishi:
+#   * jadval bo'yicha — har kuni Toshkent vaqti 02:00 va 14:00 da
+#   * qo'lda      — @demovariantbot dagi "🔄 Sinxron" tugmasi (workflow_dispatch)
+#
+# Kompyuter yoqilgan bo'lishi shart emas.
+
+name: Katalog sinxron
+
+on:
+  schedule:
+    - cron: "0 21 * * *"      # 02:00 Toshkent (UTC+5)
+    - cron: "0 9 * * *"       # 14:00 Toshkent
+  workflow_dispatch:
+    inputs:
+      kim:
+        description: "Kim ishga tushirdi"
+        required: false
+        default: "qo'lda"
+
+concurrency:                   # ikkita sinxron baravar yurmasin
+  group: katalog-sinxron
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sinxron:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Kutubxonalar
+        run: pip install --quiet requests Pillow cryptography
+
+      - name: Billz'dan sinxron
+        env:
+          BILLZ_SECRET_TOKEN: ${{ secrets.BILLZ_SECRET_TOKEN }}
+          KATALOG_PIN: ${{ secrets.KATALOG_PIN }}
+          SAVDO_API_KALIT: ${{ secrets.SAVDO_API_KALIT }}
+        run: python sync.py
+
+      - name: O'zgarishni saqlash
+        run: |
+          git config user.name "noyob-sinxron"
+          git config user.email "noyob-sinxron@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "O'zgarish yo'q — katalog allaqachon yangi."
+            echo "xulosa=O'zgarish yo'q" >> "$GITHUB_ENV"
+          else
+            n=$(git diff --cached --name-only | wc -l)
+            git commit -m "katalog sinxron: $n fayl yangilandi (${{ github.event_name }})"
+            git push
+            echo "xulosa=$n fayl yangilandi" >> "$GITHUB_ENV"
+          fi
+
+      - name: Xulosa
+        run: echo "### Katalog sinxron — $xulosa" >> "$GITHUB_STEP_SUMMARY"
